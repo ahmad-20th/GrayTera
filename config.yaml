@@ -1,0 +1,52 @@
+# GrayTera Configuration
+
+subdomain_enum:
+  timeout: 10
+  max_subdomains: 1000
+  wordlist: wordlists/subdomains.txt
+  use_crt_sh: true
+  use_dns_bruteforce: true
+
+vulnerability_scan:
+  threads: 10
+  timeout: 30
+  max_depth: 3  # For crawling
+  follow_redirects: true
+  
+  # Scanner-specific configs
+  sqli:
+    enabled: true
+    payloads_file: payloads/sqli.txt
+    detect_waf: true
+  
+  xss:
+    enabled: false  # Enable when implemented
+  
+  csrf:
+    enabled: false  # Enable when implemented
+
+exploitation:
+  auto_exploit: false  # Require manual confirmation
+  max_attempts: 3
+  timeout: 60
+  
+  # Exploit-specific configs
+  sqli:
+    extract_tables: true
+    extract_users: false  # Be careful with this!
+    max_rows: 10
+
+retry:
+  max_retries: 3
+  backoff_factor: 2
+  retry_on_status: [500, 502, 503, 504]
+
+output:
+  save_format: json  # json, html, xml
+  include_raw_requests: false
+  include_screenshots: false
+
+logging:
+  level: INFO  # DEBUG, INFO, WARNING, ERROR
+  file: data/logs/graytera.log
+  console: true
