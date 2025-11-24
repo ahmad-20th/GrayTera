@@ -5,7 +5,7 @@
 
 ### Day 1 (Today) - Foundation
 **All Teams Together:**
-- [-] Setup project structure & Git repo
+- [x] Setup project structure & Git repo
 - [ ] Create virtual environments
 - [ ] Define interfaces & data models
 - [ ] Assign team responsibilities
@@ -129,8 +129,8 @@
 7. ✅ **Error handling** - doesn't crash on failures
 
 ### High Priority (Cut if behind schedule):
-8. ⚠️ Colored console output
-9. ⚠️ Retry logic for network errors
+8.  ⚠️ Colored console output
+9.  ⚠️ Retry logic for network errors
 10. ⚠️ Multiple subdomain techniques (crt.sh)
 11. ⚠️ Boolean-based SQLi detection
 12. ⚠️ File logging
@@ -164,7 +164,7 @@ Each person answers:
 
 ### File Ownership (Who edits what):
 - **Team 1:** `core/pipeline.py`, `core/data_store.py`, `main.py`
-- **Team 2:** `stages/subdomain_enum.py`
+- **Team 2:** `stages/subdomain_enum.py`, `enums/cert_logs.py`, `enums/cert_logs.py`, `enums/dict_brute_force.py`, `enums/dns_zone.py`, `enums/search_queries.py`
 - **Team 3:** `scanners/sqli_scanner.py`, `scanners/scanner_registry.py`
 - **Team 4:** `exploits/sqli_exploit.py`, `utils/http_client.py`
 
@@ -320,25 +320,3 @@ git push origin feature/sqli-scanner
 
 **Great Demo:**
 - Above + multiple targets + boolean-based SQLi
-
----
-
-## EMERGENCY CONTACTS
-=====================
-
-**If stuck for >30 minutes:**
-1. Ask team for help (Slack/Discord)
-2. Check documentation
-3. Search Stack Overflow
-4. Ask instructor/mentor
-
-**Critical Issues (Report Immediately):**
-- Code doesn't run on team member's machine
-- Major architecture flaw discovered
-- Team member unavailable/sick
-- Missing dependencies/permissions
-
----
-
-**Last Updated:** [Today's Date]
-**Next Review:** Day 4 (Adjust timeline if needed)
