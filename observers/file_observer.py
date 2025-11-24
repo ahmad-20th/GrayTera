@@ -13,6 +13,7 @@ class FileObserver(BaseObserver):
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.log_file = self.output_dir / f"scan_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
         self.events = []
+        self._file_handle = None
     
     def update(self, stage: str, event: str, data: Any = None):
         """Log event to file"""
@@ -25,7 +26,17 @@ class FileObserver(BaseObserver):
         
         self.events.append(log_entry)
         
-        # Append to log file
-        with open(self.log_file, 'a') as f:
-            f.write(json.dumps(log_entry) + '\n')
+        try:
+            if not self._file_handle:
+                self._file_handle = open(self.log_file, 'a')
+            
+            self._file_handle.write(json.dumps(log_entry) + '\n')
+            self._file_handle.flush()
+        except Exception:
+            pass
+    
+    def __del__(self):
+        """Cleanup on deletion"""
+        if self._file_handle:
+            self._file_handle.close()
 

@@ -7,6 +7,11 @@ class HTTPClient:
     """HTTP client with retry logic and error handling"""
     
     def __init__(self, max_retries: int = 3, timeout: int = 30):
+        if max_retries < 1:
+            raise ValueError("max_retries must be >= 1")
+        if timeout < 1:
+            raise ValueError("timeout must be >= 1")
+        
         self.max_retries = max_retries
         self.timeout = timeout
         self.session = requests.Session()

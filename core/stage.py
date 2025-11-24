@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Any
 from core.target import Target
+from observers.base_observer import BaseObserver  # ADD THIS IMPORT
 
 
 class Stage(ABC):
@@ -8,7 +9,7 @@ class Stage(ABC):
     
     def __init__(self, name: str):
         self.name = name
-        self.observers = []
+        self.observers: List[BaseObserver] = []
     
     @abstractmethod
     def execute(self, target: Target) -> bool:
@@ -23,5 +24,5 @@ class Stage(ABC):
         for observer in self.observers:
             observer.update(self.name, event, data)
     
-    def attach_observer(self, observer):
+    def attach_observer(self, observer: BaseObserver):
         self.observers.append(observer)

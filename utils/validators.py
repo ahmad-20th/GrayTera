@@ -3,9 +3,12 @@ from urllib.parse import urlparse
 
 
 def is_valid_domain(domain: str) -> bool:
-    """Validate domain format"""
-    pattern = r'^(?:[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}
-    return bool(re.match(pattern, domain))
+    """Validate if string is a valid domain name"""
+    if not isinstance(domain, str) or not domain:
+        return False
+    
+    pattern = r'^(?:[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$'
+    return bool(re.match(pattern, domain.lower()))
 
 
 def is_valid_url(url: str) -> bool:

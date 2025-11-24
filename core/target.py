@@ -24,12 +24,14 @@ class Target:
     exploited: List[Dict[str, Any]] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
     
-    def add_subdomain(self, subdomain: str):
-        if subdomain not in self.subdomains:
+    def add_subdomain(self, subdomain: str) -> None:
+        if subdomain and subdomain not in self.subdomains:
             self.subdomains.append(subdomain)
     
-    def add_vulnerability(self, vuln: Vulnerability):
-        self.vulnerabilities.append(vuln)
+    def add_vulnerability(self, vuln: Vulnerability) -> None:
+        if vuln:
+            self.vulnerabilities.append(vuln)
     
-    def add_exploit_result(self, result: Dict[str, Any]):
-        self.exploited.append(result)
+    def add_exploit_result(self, result: Dict[str, Any]) -> None:
+        if result:
+            self.exploited.append(result)

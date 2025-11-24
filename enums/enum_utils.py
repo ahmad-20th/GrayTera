@@ -7,10 +7,13 @@ from typing import List, Optional
 # Global stop event (shared across all enumerators)
 STOP_EVENT = threading.Event()
 
+_print_lock = threading.Lock()
+
 def safe_print(*args, **kwargs) -> None:
     """Thread-safe print to console"""
     try:
-        print(*args, **kwargs, flush=True)
+        with _print_lock:
+            print(*args, **kwargs, flush=True)
     except Exception:
         pass
 

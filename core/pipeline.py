@@ -6,6 +6,7 @@ from core.data_store import DataStore
 from stages.subdomain_enum import SubdomainEnumStage
 from stages.vulnerability_scan import VulnerabilityScanStage
 from stages.exploitation import ExploitationStage
+import logging
 
 
 class Pipeline:

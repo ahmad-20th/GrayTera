@@ -28,14 +28,33 @@ def main():
     parser.add_argument('--config', default='config.yaml', help='Config file')
     args = parser.parse_args()
     
+    # Validate target domain
+    from utils.validators import is_valid_domain
+    if not is_valid_domain(args.target):
+        print(f"[!] Invalid domain: {args.target}")
+        sys.exit(1)
+    
     # Setup
-    setup_logging()
-    data_store = DataStore(args.output)
+    try:
+        setup_logging()
+    except Exception as e:
+        print(f"[!] Logging setup failed: {e}")
+        sys.exit(1)
+    
+    try:
+        data_store = DataStore(args.output)
+    except Exception as e:
+        print(f"[!] Data store initialization failed: {e}")
+        sys.exit(1)
     
     # Create pipeline with observers
-    pipeline = Pipeline(data_store, config_path=args.config)
-    pipeline.attach(ConsoleObserver())
-    pipeline.attach(FileObserver(args.output))
+    try:
+        pipeline = Pipeline(data_store, config_path=args.config)
+        pipeline.attach(ConsoleObserver())
+        pipeline.attach(FileObserver(args.output))
+    except Exception as e:
+        print(f"[!] Pipeline initialization failed: {e}")
+        sys.exit(1)
     
     try:
         if args.resume:
