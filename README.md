@@ -12,7 +12,7 @@ A modular Dynamic Application Security Testing (DAST) tool for automated penetra
 
 ```bash
 # Clone repository
-git clone 
+git clone https://github.com/ahmad-20th/GrayTera
 cd graytera
 
 # Create work environment
@@ -59,6 +59,7 @@ graytera/
 ├── main.py                 # Entry point
 ├── core/                   # Core pipeline logic
 ├── stages/                 # Pipeline stages
+├── enums/                  # Subdomain enumration modules
 ├── scanners/               # Vulnerability scanners
 ├── exploits/               # Exploitation modules
 ├── observers/              # Event observers (logging, output)
@@ -128,8 +129,3 @@ python -m pytest tests/test_pipeline.py
 - Developer 5-6: SQLi Scanner & Exploit
 - Developer 7: Data Store
 - Developer 8: Error Handling & Logging
-
-## License
-
-[Your License Here]
-```
