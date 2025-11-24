@@ -54,7 +54,7 @@ class DNSEnumerator(BaseEnumerator):
         safe_print(f"\n[DNS] Querying nameservers...")
         try:
             answers = self.resolver.resolve(domain, "NS")
-            nameservers = [str(rdata.target).rstrip('.') for rdata in answers]
+            nameservers: List[str] = [str(rdata.target).rstrip('.') for rdata in answers]
             safe_print(f"[+] Found {len(nameservers)} nameserver(s)")
             for ns in nameservers:
                 safe_print(f"    - {ns}")

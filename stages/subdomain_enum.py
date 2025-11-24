@@ -15,7 +15,11 @@ class SubdomainEnumStage(Stage):
         super().__init__("Subdomain Enumeration")
         self.config = config or {}
         self.lock = threading.Lock()
-        self.enum_registry = EnumeratorRegistry(config)
+        try:
+            self.enum_registry = EnumeratorRegistry(config)
+        except Exception as e:
+            self.notify("error", f"Failed to initialize EnumeratorRegistry: {e}")
+            self.enum_registry = None
 
     def execute(self, target: Target) -> bool:
         """Enumerate subdomains using all registered strategies"""

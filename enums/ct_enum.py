@@ -43,21 +43,34 @@ class CTEnumerator(BaseEnumerator):
     def _query_crtsh(self, domain: str) -> Set[str]:
         """Query crt.sh API for subdomains"""
         safe_print("\n[CT] Querying crt.sh...")
-        subdomains = set()
+        subdomains: Set[str] = set()
         
         try:
             url = f"https://crt.sh/?q=%.{domain}&output=json"
             response = self.session.get(url, timeout=20)
             
             if response.status_code == 200:
-                data = response.json()
-                for entry in data:
-                    for name in entry.get("name_value", "").split("\n"):
-                        name = name.strip().lower().lstrip("*.")
-                        if name and (name.endswith(domain) or name == domain):
-                            subdomains.add(name)
+                try:
+                    data = response.json()
+                    if not isinstance(data, list):
+                        safe_print("[!] Unexpected response format from crt.sh")
+                        return subdomains
+                    
+                    for entry in data:
+                        if not isinstance(entry, dict):
+                            continue
+                        
+                        for name in entry.get("name_value", "").split("\n"):
+                            name = name.strip().lower().lstrip("*.")
+                            if name and (name.endswith(domain) or name == domain):
+                                subdomains.add(name)
+                
+                except ValueError as e:
+                    safe_print(f"[!] Invalid JSON response: {e}")
+            else:
+                safe_print(f"[!] HTTP {response.status_code} from crt.sh")
         
         except Exception as e:
-            safe_print(f"[!] Error: {type(e).__name__}")
+            safe_print(f"[!] Error: {type(e).__name__}: {e}")
         
         return subdomains

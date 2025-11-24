@@ -37,8 +37,19 @@ class DataStore:
         if not pickle_path.exists():
             return None
         
-        with open(pickle_path, 'rb') as f:
-            return pickle.load(f)
+        try:
+            with open(pickle_path, 'rb') as f:
+                # Only allow Target objects to be unpickled
+                data = pickle.load(f)
+                if not isinstance(data, Target):
+                    raise TypeError(f"Expected Target, got {type(data)}")
+                return data
+        except Exception as e:
+            # Fall back to JSON if pickle fails
+            json_path = self.base_path / self._sanitize_domain(domain) / 'scan_data.json'
+            if json_path.exists():
+                return self._load_from_json(json_path)
+            raise
     
     def _sanitize_domain(self, domain: str) -> str:
         """Convert domain to safe directory name"""

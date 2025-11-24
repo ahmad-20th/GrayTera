@@ -41,21 +41,15 @@ class SQLiScanner(BaseScanner):
     
     def scan(self, target_url: str) -> List[Vulnerability]:
         """Scan target for SQL injection vulnerabilities"""
-        vulnerabilities = []
+        vulnerabilities: List[Vulnerability] = []
         
         # TODO: Implement full SQLi detection logic
+        # For now, return empty (no vulnerabilities found)
+        # Features to implement:
         # 1. Discover parameters (GET, POST, cookies, headers)
         # 2. Test each parameter with payloads
         # 3. Analyze responses for SQLi indicators
         # 4. Verify findings to reduce false positives
-        
-        # Example skeleton:
-        # parameters = self._discover_parameters(target_url)
-        # for param in parameters:
-        #     for payload in self.payloads:
-        #         if self._test_sqli(target_url, param, payload):
-        #             vuln = Vulnerability(...)
-        #             vulnerabilities.append(vuln)
         
         return vulnerabilities
     
