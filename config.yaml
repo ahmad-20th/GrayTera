@@ -3,9 +3,25 @@
 subdomain_enum:
   timeout: 10
   max_subdomains: 1000
-  wordlist: wordlists/subdomains.txt
+  
+  # Enable/disable strategies
+  use_dns: true
   use_crt_sh: true
-  use_dns_bruteforce: true
+  use_dorking: true
+  
+  # Strategy-specific configs
+  dns:
+    threads: 10
+    wordlist: wordlists/subdomains.txt
+  
+  ct:
+    timeout: 20
+  
+  dork:
+    pages: 2
+    timeout: 8
+  
+  common_subdomains: ['www', 'mail', 'ftp', 'admin', 'blog', 'dev', 'api']
 
 vulnerability_scan:
   threads: 10
