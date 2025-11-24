@@ -179,7 +179,7 @@ Each person answers:
 git pull origin main
 
 # Work on your feature:
-git checkout -b feature/sqli-scanner
+git switch -c feature/sqli-scanner
 # ... code code code ...
 
 # Commit often:
@@ -191,7 +191,14 @@ git pull origin main
 # Fix any conflicts
 git push origin feature/sqli-scanner
 
-# Create pull request for review
+# Create pull request for review on GitHub
+
+# Switch back to main branch if you finished
+# working on this feature
+git switch main
+
+# In case of successful merge, delete branch
+git branch -d feature/sqli-scanner
 ```
 
 ---

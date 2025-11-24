@@ -27,18 +27,18 @@ GrayTera follows a **modular, pipeline-based architecture** designed for extensi
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    GrayTera Architecture                     │
+│                    GrayTera Architecture                    │
 └─────────────────────────────────────────────────────────────┘
 
                     ┌──────────────────┐
-                    │   CLI Interface   │
+                    │   CLI Interface  │
                     │    (main.py)     │
                     └────────┬─────────┘
                              │
                              ▼
                     ┌──────────────────┐
-                    │    Pipeline       │◄──── Observer Pattern
-                    │   Orchestrator    │      (Logging, Progress)
+                    │    Pipeline      │◄──── Observer Pattern
+                    │   Orchestrator   │      (Logging, Progress)
                     └────────┬─────────┘
                              │
           ┌──────────────────┼──────────────────┐
