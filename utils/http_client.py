@@ -35,9 +35,11 @@ class HTTPClient:
             try:
                 kwargs.setdefault('timeout', self.timeout)
                 kwargs.setdefault('allow_redirects', True)
+                raise_for_status = kwargs.pop('raise_for_status', True)
                 
                 response = self.session.request(method, url, **kwargs)
-                response.raise_for_status()
+                if raise_for_status:
+                    response.raise_for_status()
                 return response
                 
             except requests.exceptions.RequestException as e:

