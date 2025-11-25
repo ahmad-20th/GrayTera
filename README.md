@@ -103,6 +103,13 @@ Edit `config.yaml` to customize:
 - Retry logic
 - Output formats
 
+### SQLMap detection
+- Set `exploitation.sqlmap.path` to the exact command or script (e.g. `python -m sqlmap` or `C:\\Tools\\sqlmap\\sqlmap.py`) if SQLMap is not in your `PATH`.
+- Alternatively export `SQLMAP_PATH` with the same value.
+
+### Custom SQLi strategies
+- Edit `payloads/sqli_strategies.yaml` to add advanced techniques (cookie-based, time-delay, XML, etc.). Each strategy describes its injection point, payloads, and success condition, and the exploit layer will report which strategy matched.
+
 ## Testing
 
 ```bash
