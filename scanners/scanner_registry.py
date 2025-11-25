@@ -2,6 +2,7 @@ from typing import List, Dict
 from scanners.base_scanner import BaseScanner
 from scanners.sqli_scanner import SQLiScanner
 from scanners.zap_scanner import ZAPScanner
+from scanners.nikto_scanner import NiktoScanner
 
 class ScannerRegistry:
     """Registry for managing vulnerability scanners"""
@@ -14,6 +15,7 @@ class ScannerRegistry:
     def _register_default_scanners(self):
         self.register(SQLiScanner())
         
+        # ZAP Scanner
         zap_config = self.config.get('zap', {})
         
         if zap_config.get('enabled', False):
@@ -24,7 +26,26 @@ class ScannerRegistry:
             
             if api_key:
                 self.register(ZAPScanner(api_key=api_key, proxy_url=proxy_url,
-                                        max_depth=max_depth, max_children=max_children))     
+                                        max_depth=max_depth, max_children=max_children))   
+
+        # Nikto Scanner
+        try:
+            import yaml
+            with open('config.yaml', 'r') as f:
+                config = yaml.safe_load(f)
+            
+            nikto_config = config.get('vulnerability_scan', {}).get('nikto', {})
+            
+            if nikto_config.get('enabled', False):
+                nikto_path = nikto_config.get('nikto_path')
+                timeout = nikto_config.get('timeout', 300)
+                
+                self.register(NiktoScanner(nikto_path=nikto_path, timeout=timeout))
+                print("[+] Nikto Scanner registered")
+        except FileNotFoundError as e:
+            print(f"[!] Nikto not available: {e}")
+        except Exception as e:
+            print(f"[!] Failed to register Nikto: {e}")
                  
     def register(self, scanner: BaseScanner):
         """Register a new scanner"""

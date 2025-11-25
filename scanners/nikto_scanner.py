@@ -1,246 +1,126 @@
-"""
-Nikto Scanner Integration for GrayTera
---------------------------------------
-- Runs Nikto scanner
-- Saves XML output
-- Parses vulnerabilities from XML
-- Supports JSON + SQLite persistence
-"""
-
-import os
-import shutil
-import subprocess
-import json
-import sqlite3
-import xml.etree.ElementTree as ET
+from scanners.base_scanner import BaseScanner
+from core.target import Vulnerability
+from typing import List
 from datetime import datetime
-from typing import List, Optional, Dict, Any
-
-try:
-    from core.target import Vulnerability
-except Exception:
-    Vulnerability = None
-
-
-# fallback BaseScanner if GrayTera base is not available
-try:
-    from scanners.base_scanner import BaseScanner
-except Exception:
-    class BaseScanner:
-        def __init__(self, name: str):
-            self.name = name
+import subprocess
+import os
+import xml.etree.ElementTree as ET
+import shutil
 
 
 class NiktoScanner(BaseScanner):
-    def __init__(
-        self,
-        nikto_path: Optional[str] = None,
-        persist: Optional[str] = None,
-        db_path: Optional[str] = None
-    ):
-        """
-        persist: None | "json" | "sqlite"
-        """
+    """Nikto web server scanner integration"""
+    
+    def __init__(self, nikto_path: str = None, timeout: int = 300):
         super().__init__("Nikto Scanner")
-
-        self.nikto_cmd = nikto_path or self._find_nikto()
-        self._missing = not bool(self.nikto_cmd)
-
-        self.persist = persist
-        self.db_path = db_path or "data/nikto_results.db"
-
-        if persist == "sqlite":
-            self._init_sqlite_db()
-
-    # ---------------------------------------------------------
-    # Find Nikto in system PATH
-    # ---------------------------------------------------------
-    def _find_nikto(self) -> Optional[str]:
-        for name in ("nikto", "nikto.pl"):
+        self.nikto_path = nikto_path or self._find_nikto()
+        self.timeout = timeout
+        
+        if not self.nikto_path:
+            raise FileNotFoundError("Nikto not found. Install: apt-get install nikto")
+    
+    def _find_nikto(self) -> str:
+        """Find Nikto in system PATH"""
+        for name in ["nikto", "nikto.pl"]:
             path = shutil.which(name)
             if path:
                 return path
         return None
-
-    # ---------------------------------------------------------
-    # Initialize SQLite database
-    # ---------------------------------------------------------
-    def _init_sqlite_db(self):
-        os.makedirs("data", exist_ok=True)
-
-        conn = sqlite3.connect(self.db_path)
-        cur = conn.cursor()
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS scans (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            target TEXT,
-            run_at TEXT,
-            xml_path TEXT
-        );
-        """)
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS findings (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            scan_id INTEGER,
-            name TEXT,
-            uri TEXT,
-            description TEXT,
-            metadata TEXT,
-            FOREIGN KEY(scan_id) REFERENCES scans(id)
-        );
-        """)
-
-        conn.commit()
-        conn.close()
-
-    # ---------------------------------------------------------
-    # Save JSON file
-    # ---------------------------------------------------------
-    def _save_json(self, target: str, ts: str, findings: List[Dict], xml_path: str):
-        os.makedirs("data", exist_ok=True)
-        out = f"data/nikto-{target}-{ts}.json"
-
-        with open(out, "w", encoding="utf-8") as fh:
-            json.dump(
-                {
-                    "target": target,
-                    "timestamp": ts,
-                    "xml": xml_path,
-                    "findings": findings,
-                },
-                fh,
-                indent=2
+    
+    def scan(self, target_url: str) -> List[Vulnerability]:
+        """Scan target with Nikto"""
+        if not target_url.startswith(('http://', 'https://')):
+            target_url = f"https://{target_url}"
+        
+        # FIX: Validate domain before scanning
+        if not self._is_valid_target(target_url):
+            print(f"[Nikto] Skipping invalid target: {target_url}")
+            return []
+        
+        vulnerabilities = []
+        xml_file = f"/tmp/nikto_{datetime.now().timestamp()}.xml"
+        
+        try:
+            cmd = [self.nikto_path, "-h", target_url, "-o", xml_file, "-Format", "xml"]
+            
+            print(f"[Nikto] Scanning {target_url}...")
+            
+            result = subprocess.run(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=self.timeout,
+                text=True
             )
-        return out
+            
+            if result.returncode != 0 or not os.path.exists(xml_file):
+                return []
+            
+            vulnerabilities = self._parse_xml(xml_file, target_url)
+            print(f"[Nikto] Found {len(vulnerabilities)} issues")
+            
+        except subprocess.TimeoutExpired:
+            print(f"[!] Nikto timed out")
+        except Exception as e:
+            print(f"[!] Nikto error: {e}")
+        finally:
+            if os.path.exists(xml_file):
+                os.remove(xml_file)
+        
+        return vulnerabilities
 
-    # ---------------------------------------------------------
-    # Save SQLite data
-    # ---------------------------------------------------------
-    def _save_sqlite(self, target: str, ts: str, data: List[Dict], xml_path: str):
-        conn = sqlite3.connect(self.db_path)
-        cur = conn.cursor()
-
-        cur.execute(
-            "INSERT INTO scans (target, run_at, xml_path) VALUES (?, ?, ?)",
-            (target, ts, xml_path)
-        )
-        scan_id = cur.lastrowid
-
-        for f in data:
-            cur.execute(
-                """
-                INSERT INTO findings (scan_id, name, uri, description, metadata)
-                VALUES (?, ?, ?, ?, ?)
-                """,
-                (
-                    scan_id,
-                    f["name"],
-                    f.get("uri"),
-                    f["description"],
-                    json.dumps(f["metadata"]),
-                )
-            )
-
-        conn.commit()
-        conn.close()
-
-    # ---------------------------------------------------------
-    # Build Nikto command
-    # ---------------------------------------------------------
-    def _build_cmd(self, target: str, xml_path: str) -> List[str]:
-        return [
-            self.nikto_cmd,
-            "-h", target,
-            "-o", xml_path,
-            "-Format", "xml"
-        ]
-
-    # ---------------------------------------------------------
-    # Parse XML
-    # ---------------------------------------------------------
-    def _parse_xml(self, xml_file: str):
-        findings = []
-
+    def _is_valid_target(self, url: str) -> bool:
+        """Check if target is valid for scanning"""
+        from urllib.parse import urlparse
+        
+        try:
+            parsed = urlparse(url)
+            hostname = parsed.hostname
+            
+            # Skip if contains invalid characters
+            if not hostname or '@' in hostname or ' ' in hostname:
+                return False
+            
+            # Skip certificate transparency artifacts
+            if 'test intermediate' in hostname.lower():
+                return False
+            
+            return True
+            
+        except:
+            return False    
+        
+    def _parse_xml(self, xml_file: str, target_url: str) -> List[Vulnerability]:
+        """Parse Nikto XML output to Vulnerability objects"""
+        vulnerabilities = []
+        
         try:
             tree = ET.parse(xml_file)
             root = tree.getroot()
-
+            
             for item in root.findall(".//item"):
-                desc = item.findtext("description") or item.findtext("name") or "Nikto Finding"
-                uri = item.findtext("uri") or item.findtext("cgi")
-                metadata = {child.tag: child.text for child in item}
-
-                record = {
-                    "name": desc,
-                    "description": desc,
-                    "uri": uri,
-                    "metadata": metadata
-                }
-
-                # Wrap into Vulnerability class if available
-                if Vulnerability:
-                    try:
-                        findings.append(Vulnerability(
-                            name=record["name"],
-                            description=record["description"],
-                            uri=record["uri"],
-                            metadata=record["metadata"]
-                        ))
-                    except:
-                        findings.append(record)
-                else:
-                    findings.append(record)
-
+                # Extract data
+                desc = item.findtext("description", "Nikto finding")
+                uri = item.findtext("uri", "")
+                osvdb = item.findtext("osvdbid", "")
+                
+                # Map severity (Nikto doesn't provide severity, use 'medium' default)
+                severity = "medium"
+                
+                # Create vulnerability
+                vuln = Vulnerability(
+                    vuln_type="nikto_finding",
+                    severity=severity,
+                    url=f"{target_url}{uri}",
+                    parameter="N/A",
+                    payload="N/A",
+                    evidence=f"Description: {desc} | OSVDB: {osvdb}",
+                    timestamp=datetime.now()
+                )
+                
+                vulnerabilities.append(vuln)
+                
         except Exception as e:
-            print("XML Parser Error:", e)
-
-        return findings
-
-    # ---------------------------------------------------------
-    # MAIN SCAN FUNCTION
-    # ---------------------------------------------------------
-    def scan(self, target_url: str):
-        if self._missing:
-            print("Nikto not found in PATH.")
-            return []
-
-        os.makedirs("data", exist_ok=True)
-
-        ts = datetime.utcnow().strftime("%Y%m%d%H%M%S")
-        safe = target_url.replace("://", "_").replace("/", "_")
-
-        xml_output = f"data/nikto-{safe}-{ts}.xml"
-
-        cmd = self._build_cmd(target_url, xml_output)
-
-        try:
-            subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        except Exception as e:
-            print("Error executing Nikto:", e)
-            return []
-
-        if not os.path.exists(xml_output):
-            print("Nikto did not generate XML output.")
-            return []
-
-        findings = self._parse_xml(xml_output)
-
-        cleaned = [
-            {
-                "name": getattr(f, "name", f["name"]),
-                "description": getattr(f, "description", f["description"]),
-                "uri": getattr(f, "uri", f.get("uri")),
-                "metadata": getattr(f, "metadata", f.get("metadata")),
-            }
-            for f in findings
-        ]
-
-        if self.persist == "json":
-            self._save_json(safe, ts, cleaned, xml_output)
-
-        if self.persist == "sqlite":
-            self._save_sqlite(safe, ts, cleaned, xml_output)
-
-        return findings
+            print(f"[!] XML parse error: {e}")
+        
+        return vulnerabilities
