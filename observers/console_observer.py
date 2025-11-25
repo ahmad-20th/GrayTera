@@ -31,6 +31,13 @@ class ConsoleObserver(BaseObserver):
         elif event == 'warning':
             self._print_warning(f"[{timestamp}] [{stage}] WARNING: {data}")
         
+        elif event == 'info':
+            self._print_info(f"[{timestamp}] [{stage}] {data}")
+        
+        elif event == 'info_stop':
+            # Just ignore this event
+            pass
+        
         elif event == 'subdomain_found':
             self._print_info(f"[{timestamp}] [+] Subdomain: {data}")
         

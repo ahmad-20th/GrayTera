@@ -3,7 +3,7 @@
 import socket
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Set, List, Optional, Dict, Any
+from typing import Set, List, Optional
 
 import dns.resolver
 import dns.query
@@ -11,7 +11,7 @@ import dns.zone
 from tqdm import tqdm
 
 from enums.base_enum import BaseEnumerator
-from enums.enum_utils import safe_print, load_wordlist, STOP_EVENT
+from enums.enum_utils import load_wordlist, STOP_EVENT
 
 
 class DNSEnumerator(BaseEnumerator):
@@ -28,39 +28,29 @@ class DNSEnumerator(BaseEnumerator):
     
     def enumerate(self, domain: str) -> Set[str]:
         """Perform DNS enumeration"""
-        safe_print(f"\n{'='*60}")
-        safe_print(f"[*] DNS RECONNAISSANCE: {domain}")
-        safe_print(f"{'='*60}")
-        
         found = set()
         
         # 1. Get nameservers
         nameservers = self._get_nameservers(domain)
-        
-        # 2. Attempt zone transfers
-        for ns in nameservers:
-            axfr_results = self._attempt_zone_transfer(ns, domain)
-            found.update(axfr_results)
+        if nameservers:
+            # 2. Attempt zone transfers
+            for ns in nameservers:
+                axfr_results = self._attempt_zone_transfer(ns, domain)
+                found.update(axfr_results)
         
         # 3. Bruteforce subdomains
         brute_results = self._bruteforce_subdomains(domain)
         found.update(brute_results)
         
-        safe_print(f"\n[+] DNS Enumeration found {len(found)} subdomains")
         return found
     
     def _get_nameservers(self, domain: str) -> List[str]:
         """Query nameservers for domain"""
-        safe_print(f"\n[DNS] Querying nameservers...")
         try:
             answers = self.resolver.resolve(domain, "NS")
             nameservers: List[str] = [str(rdata.target).rstrip('.') for rdata in answers]
-            safe_print(f"[+] Found {len(nameservers)} nameserver(s)")
-            for ns in nameservers:
-                safe_print(f"    - {ns}")
             return nameservers
-        except Exception as e:
-            safe_print(f"[!] NS query failed: {type(e).__name__}")
+        except Exception:
             return []
     
     def _attempt_zone_transfer(self, ns: str, domain: str) -> Set[str]:
@@ -69,7 +59,6 @@ class DNSEnumerator(BaseEnumerator):
             return set()
         
         found = set()
-        safe_print(f"[DNS] Attempting zone transfer from {ns}...")
         
         try:
             ns_ip = socket.gethostbyname(ns)
@@ -84,12 +73,9 @@ class DNSEnumerator(BaseEnumerator):
                         if name_str and name_str != "@":
                             fqdn = f"{name_str}.{domain}" if not name_str.endswith(domain) else name_str
                             found.add(fqdn.lower())
-            
-            if found:
-                safe_print(f"[+] SUCCESS! Got {len(found)} records from AXFR")
         
         except Exception:
-            safe_print(f"[-] Zone transfer failed")
+            pass
         
         return found
     
@@ -100,7 +86,6 @@ class DNSEnumerator(BaseEnumerator):
             return set()
         
         found = set()
-        safe_print(f"\n[*] Enumerating {len(words)} subdomains with {self.threads} threads...")
         
         def check_subdomain(word: str) -> Optional[str]:
             if STOP_EVENT.is_set():
@@ -125,7 +110,6 @@ class DNSEnumerator(BaseEnumerator):
                         result = future.result()
                         if result:
                             found.add(result)
-                            safe_print(f"[+] Found: {result}")
                     except Exception:
                         pass
                     

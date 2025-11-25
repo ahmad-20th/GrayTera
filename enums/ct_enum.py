@@ -1,11 +1,10 @@
 """Certificate Transparency enumeration"""
 
-from typing import Set, List, Optional, Dict, Any
+from typing import Set
 
 import requests
 
 from enums.base_enum import BaseEnumerator
-from enums.enum_utils import safe_print
 
 
 class CTEnumerator(BaseEnumerator):
@@ -21,28 +20,10 @@ class CTEnumerator(BaseEnumerator):
     
     def enumerate(self, domain: str) -> Set[str]:
         """Query crt.sh for subdomains"""
-        safe_print(f"\n{'='*60}")
-        safe_print(f"[*] CERTIFICATE TRANSPARENCY: {domain}")
-        safe_print(f"{'='*60}")
-        
-        found = self._query_crtsh(domain)
-        
-        safe_print(f"\n[+] Found {len(found)} unique domains from CT logs")
-        
-        if found and len(found) <= 10:
-            safe_print(f"[*] Results:")
-            for sub in sorted(found):
-                safe_print(f"    - {sub}")
-        elif found:
-            safe_print(f"[*] Sample (first 10):")
-            for sub in sorted(found)[:10]:
-                safe_print(f"    - {sub}")
-        
-        return found
+        return self._query_crtsh(domain)
     
     def _query_crtsh(self, domain: str) -> Set[str]:
         """Query crt.sh API for subdomains"""
-        safe_print("\n[CT] Querying crt.sh...")
         subdomains: Set[str] = set()
         
         try:
@@ -53,7 +34,6 @@ class CTEnumerator(BaseEnumerator):
                 try:
                     data = response.json()
                     if not isinstance(data, list):
-                        safe_print("[!] Unexpected response format from crt.sh")
                         return subdomains
                     
                     for entry in data:
@@ -65,12 +45,10 @@ class CTEnumerator(BaseEnumerator):
                             if name and (name.endswith(domain) or name == domain):
                                 subdomains.add(name)
                 
-                except ValueError as e:
-                    safe_print(f"[!] Invalid JSON response: {e}")
-            else:
-                safe_print(f"[!] HTTP {response.status_code} from crt.sh")
+                except ValueError:
+                    pass
         
-        except Exception as e:
-            safe_print(f"[!] Error: {type(e).__name__}: {e}")
+        except Exception:
+            pass
         
         return subdomains

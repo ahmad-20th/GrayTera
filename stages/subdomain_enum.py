@@ -32,8 +32,18 @@ class SubdomainEnumStage(Stage):
             try:
                 self.notify("info", f"Running {enumerator.name}...")
                 subdomains = enumerator.enumerate(domain)
-                found.update(subdomains)
-                self.notify("info", f"{enumerator.name} found {len(subdomains)} subdomains")
+                
+                # Notify about each subdomain found
+                subdomains_count = 0
+                for subdomain in subdomains:
+                    if subdomain not in found:
+                        found.add(subdomain)
+                        self.notify("subdomain_found", subdomain)
+                        subdomains_count += 1
+                
+                # Only notify summary if subdomains were found
+                if subdomains_count > 0:
+                    self.notify("info", f"{enumerator.name} found {subdomains_count} new subdomains")
 
             except Exception as e:
                 self.notify("warning", f"{enumerator.name} failed: {type(e).__name__}: {e}")
@@ -45,16 +55,17 @@ class SubdomainEnumStage(Stage):
             for sub in common_subdomains:
                 fqdn = f"{sub}.{domain}"
                 if self._check_subdomain_exists(fqdn):
-                    found.add(fqdn.lower())
+                    if fqdn.lower() not in found:
+                        found.add(fqdn.lower())
+                        self.notify("subdomain_found", fqdn.lower())
         except Exception:
             pass
 
-        # Finalize: add to target and notify observers
+        # Finalize: add to target
         added = 0
         for fqdn in sorted(found):
             with self.lock:
                 target.add_subdomain(fqdn)
-                self.notify("subdomain_found", fqdn)
                 added += 1
 
         self.notify("complete", f"Found {added} subdomains")
