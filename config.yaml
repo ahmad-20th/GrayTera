@@ -18,8 +18,8 @@ subdomain_enum:
     timeout: 20
   
   dork:
-    pages: 2
-    timeout: 8
+    pages: 5
+    timeout: 10
   
   common_subdomains: ['www', 'mail', 'ftp', 'admin', 'blog', 'dev', 'api']
 
