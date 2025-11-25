@@ -46,6 +46,8 @@ vulnerability_scan:
     proxy_url: 'http://127.0.0.1:8080'
     spider_enabled: true
     active_scan_enabled: true
+    max_depth: 2
+    max_children: 10
 
   xss:
     enabled: false  # Enable when implemented

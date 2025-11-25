@@ -8,45 +8,144 @@ import time
 class ZAPScanner(BaseScanner):
     """OWASP ZAP vulnerability scanner integration"""
     
-    def __init__(self, api_key: str = None, proxy_url: str = 'http://127.0.0.1:8080'):
+    def __init__(self, api_key: str = None, proxy_url: str = 'http://127.0.0.1:8080', 
+                 max_depth: int = 2, max_children: int = 10):
         super().__init__("ZAP Scanner")
         self.api_key = api_key
         self.proxy_url = proxy_url
+        self.max_depth = max_depth
+        self.max_children = max_children
         self.zap = None
+        self._ensure_zap_running()
+
+    def _ensure_zap_running(self):
+        """Start ZAP daemon if not already running"""
+        import subprocess
+        import socket
+        
+        # Check if ZAP is already running
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            result = sock.connect_ex(('127.0.0.1', 8080))
+            sock.close()
+            if result == 0:
+                print("[ZAP] ZAP is already running")
+                return
+        except:
+            pass
+        
+        # Start ZAP daemon
+        print("[ZAP] Starting ZAP daemon...")
+        try:
+            # Linux/Mac
+            subprocess.Popen(['/home/kali/GrayTera/ZAP_2.16.1/zap.sh', '-daemon', '-port', '8080', 
+                            '-config', 'api.key=' + (self.api_key or '')],
+                           stdout=subprocess.DEVNULL, 
+                           stderr=subprocess.DEVNULL)
+        except:
+            try:
+                # Windows
+                subprocess.Popen(['zap.bat', '-daemon', '-port', '8080',
+                                '-config', 'api.key=' + (self.api_key or '')],
+                               stdout=subprocess.DEVNULL, 
+                               stderr=subprocess.DEVNULL)
+            except Exception as e:
+                print(f"[!] Failed to start ZAP daemon: {e}")
+                print("[!] Please start ZAP manually: zap.sh -daemon -port 8080")
+                return
+        
+        # Wait for ZAP to start
+        import time
+        for i in range(30):
+            try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                if sock.connect_ex(('127.0.0.1', 8080)) == 0:
+                    sock.close()
+                    print("[ZAP] ZAP daemon started successfully")
+                    time.sleep(5)  # Give it extra time to fully initialize
+                    return
+                sock.close()
+            except:
+                pass
+            time.sleep(2)
+        
+        print("[!] ZAP daemon did not start in time")
 
     def _initialize_zap(self):
         """Initialize ZAP connection"""
-        if self.zap:  # Already initialized
+        if self.zap:
             return
             
         try:
             from zapv2 import ZAPv2
             
             if not self.api_key:
-                raise ValueError("ZAP API key is required. Set it in config.yaml")
+                raise ValueError("ZAP API key is required")
             
             self.zap = ZAPv2(
                 apikey=self.api_key,
                 proxies={'http': self.proxy_url, 'https': self.proxy_url}
             )
             
-            # Test connection
-            self.zap.core.version
+            version = self.zap.core.version
+            print(f"[ZAP] Connected to ZAP version: {version}")
+            
+            # Configure ZAP to reduce memory usage
+            self._configure_zap()
             
         except ImportError:
-            raise ImportError(
-                "python-owasp-zap-v2.4 not installed. "
-                "Install with: pip install python-owasp-zap-v2.4"
-            )
+            raise ImportError("python-owasp-zap-v2.4 not installed")
         except Exception as e:
             raise ConnectionError(f"Failed to connect to ZAP: {e}")
 
+    def _configure_zap(self):
+        """Configure ZAP to limit resource usage"""
+        try:
+            # Limit spider depth
+            self.zap.spider.set_option_max_depth(self.max_depth)
+            
+            # Limit spider children
+            self.zap.spider.set_option_max_children(self.max_children)
+            
+            # Limit thread count
+            self.zap.spider.set_option_thread_count(2)
+            
+            # Reduce active scan threads
+            self.zap.ascan.set_option_thread_per_host(2)
+            
+            print(f"[ZAP] Configured: max_depth={self.max_depth}, max_children={self.max_children}")
+            
+        except Exception as e:
+            print(f"[!] Failed to configure ZAP: {e}")
+
     def scan(self, target_url: str) -> List[Vulnerability]:
-        # Initialize on first scan
+        """Scan target with ZAP"""
         self._initialize_zap()
         
         if not self.zap:
             return []
+        
+        if not target_url.startswith(('http://', 'https://')):
+            target_url = f"https://{target_url}"
+        
+        vulnerabilities = []
+        
+        try:
+            print(f"[ZAP] Scanning: {target_url}")
+            self._access_target(target_url)
+            self._run_spider(target_url)
+            self._run_active_scan(target_url)
+            vulnerabilities = self._retrieve_alerts(target_url)
+            
+            # Clear session to free memory
+            self.zap.core.new_session(name='', overwrite=True)
+            
+            print(f"[ZAP] Completed. Found {len(vulnerabilities)} vulnerabilities")
+            
+        except Exception as e:
+            print(f"[!] ZAP scan error: {e}")
+        
+        return vulnerabilities
     
     def _access_target(self, target_url: str):
         """Force ZAP to learn about the target"""
