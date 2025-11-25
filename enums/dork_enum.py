@@ -2,8 +2,9 @@
 
 import random
 import time
+import re
 from typing import Set, Optional
-from urllib.parse import urlparse
+from urllib.parse import urlparse, unquote
 
 import requests
 from bs4 import BeautifulSoup
@@ -13,15 +14,15 @@ from enums.enum_utils import STOP_EVENT
 
 
 class DorkEnumerator(BaseEnumerator):
-    """Strategy: Search engine dorking enumeration via Bing"""
+    """Strategy: Search engine dorking enumeration via Bing and Google cache"""
     
     def __init__(self, config: dict = None):
         super().__init__("Search Engine Dorking")
         self.config = config or {}
-        self.pages = int(self.config.get("dork_pages", 2))
+        self.pages = int(self.config.get("dork_pages", 3))
         self.session = requests.Session()
         self.session.headers.update({
-            'User-Agent': 'GrayTera/1.0 (authorized-testing-only)'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         })
     
     def enumerate(self, domain: str) -> Set[str]:
@@ -30,19 +31,33 @@ class DorkEnumerator(BaseEnumerator):
             return set()
         
         found = set()
+        
+        # Try multiple dork strategies
         dorks = [
             f"site:{domain}",
+            f"site:{domain} inurl:/",
+            f"site:{domain} inurl:admin",
             f"site:{domain} inurl:login",
-            f"site:{domain} inurl:admin"
+            f"site:{domain} inurl:api",
+            f"site:{domain} inurl:dev",
+            f"site:{domain} inurl:test",
         ]
         
         for dork in dorks:
+            if STOP_EVENT.is_set():
+                break
+                
             for page in range(1, self.pages + 1):
+                if STOP_EVENT.is_set():
+                    break
+                    
+                # Try Bing
                 html = self._bing_search(dork, page)
                 if html:
                     links = self._extract_links(html, domain)
                     found.update(links)
-                time.sleep(random.uniform(2.0, 3.0))
+                
+                time.sleep(random.uniform(1.0, 2.0))
         
         # Convert URLs to subdomains
         subdomains = self._extract_subdomains_from_urls(found, domain)
@@ -52,26 +67,72 @@ class DorkEnumerator(BaseEnumerator):
     def _bing_search(self, query: str, page: int = 1) -> str:
         """Perform Bing search query"""
         try:
-            params = {"q": query, "first": (page - 1) * 10 + 1}
+            params = {
+                "q": query,
+                "first": (page - 1) * 10 + 1
+            }
             response = self.session.get(
                 "https://www.bing.com/search",
                 params=params,
-                timeout=8
+                timeout=10,
+                allow_redirects=True
             )
-            return response.text if response.status_code == 200 else ""
+            if response.status_code == 200:
+                return response.text
+            return ""
         except Exception:
             return ""
     
     def _extract_links(self, html: str, domain: str) -> Set[str]:
-        """Extract domain URLs from HTML"""
+        """Extract domain URLs from HTML using multiple strategies"""
         links = set()
         try:
             soup = BeautifulSoup(html, "html.parser")
+            
+            # Strategy 1: Find all links in search results
             for a_tag in soup.find_all("a", href=True):
-                href = a_tag["href"]
-                if href.startswith("http") and domain in href:
+                href = a_tag.get("href", "")
+                if not href:
+                    continue
+                    
+                # Decode URL
+                try:
+                    href = unquote(href)
+                except:
+                    pass
+                
+                # Look for actual domain URLs
+                if domain in href and href.startswith("http"):
+                    # Clean URL
                     href = href.split("#")[0].split("?")[0]
                     links.add(href.rstrip("/"))
+                
+                # Look for /search?q= style links that contain domain
+                elif "/search?q=" in href and domain in href:
+                    # Extract the URL from the search parameter
+                    match = re.search(r'q=([^&]+)', href)
+                    if match:
+                        extracted = unquote(match.group(1))
+                        if domain in extracted and extracted.startswith("http"):
+                            extracted = extracted.split("#")[0].split("?")[0]
+                            links.add(extracted.rstrip("/"))
+            
+            # Strategy 2: Look for h2 or h3 with links
+            for heading in soup.find_all(['h2', 'h3']):
+                link = heading.find('a')
+                if link and link.get('href'):
+                    href = link.get('href', '')
+                    if domain in href and href.startswith("http"):
+                        href = href.split("#")[0].split("?")[0]
+                        links.add(href.rstrip("/"))
+            
+            # Strategy 3: Regex fallback - find URLs in text
+            url_pattern = r'https?://[^\s"<>)]+' + domain + r'[^\s"<>)*]*'
+            for match in re.finditer(url_pattern, html):
+                url = match.group(0).split("#")[0].split("?")[0].rstrip(")/")
+                if url.startswith("http"):
+                    links.add(url)
+        
         except Exception:
             pass
         
