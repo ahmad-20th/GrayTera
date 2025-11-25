@@ -83,7 +83,8 @@ class DNSEnumerator(BaseEnumerator):
         """Brute-force subdomains using wordlist"""
         words = load_wordlist(self.wordlist)
         if not words:
-            return set()
+            # If no wordlist, try a few common subdomains as fallback
+            words = ['www', 'mail', 'ftp', 'admin', 'blog', 'dev', 'api', 'test', 'staging', 'prod']
         
         found = set()
         
