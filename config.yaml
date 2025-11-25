@@ -41,13 +41,18 @@ vulnerability_scan:
     detect_waf: true
   
   zap:
-    enabled: true
+    enabled: false
     api_key: '40lq05t4hqilu3n67or858443q'
     proxy_url: 'http://127.0.0.1:8080'
     spider_enabled: true
     active_scan_enabled: true
     max_depth: 2
     max_children: 10
+
+  nikto:
+    enabled: true
+    nikto_path: null
+    timeout: 300
 
   xss:
     enabled: false  # Enable when implemented
