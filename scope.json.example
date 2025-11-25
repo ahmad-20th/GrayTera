@@ -1,0 +1,24 @@
+{
+  "in_scope": {
+    "domains": [
+      "example.com",
+      "www.example.com",
+      "api.example.com",
+      "*.internal.example.com"
+    ],
+    "patterns": [
+      "^[a-z0-9-]+\\.example\\.com$"
+    ]
+  },
+  "out_of_scope": {
+    "domains": [
+      "test.example.com",
+      "staging.example.com",
+      "dev.example.com"
+    ],
+    "patterns": [
+      ".*-test\\.example\\.com$",
+      ".*\\.staging\\.example\\.com$"
+    ]
+  }
+}

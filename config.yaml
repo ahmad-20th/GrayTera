@@ -23,6 +23,11 @@ subdomain_enum:
   
   common_subdomains: ['www', 'mail', 'ftp', 'admin', 'blog', 'dev', 'api']
 
+scope_filtering:
+  enabled: true
+  # Set scope file via --scope command line argument
+  # Example: python main.py example.com --scope scope.json
+
 vulnerability_scan:
   threads: 10
   timeout: 30
@@ -35,6 +40,15 @@ vulnerability_scan:
     payloads_file: payloads/sqli.txt
     detect_waf: true
   
+  zap:
+    enabled: true
+    api_key: '40lq05t4hqilu3n67or858443q'
+    proxy_url: 'http://127.0.0.1:8080'
+    spider_enabled: true
+    active_scan_enabled: true
+    max_depth: 2
+    max_children: 10
+
   xss:
     enabled: false  # Enable when implemented
   

@@ -41,6 +41,9 @@ class ConsoleObserver(BaseObserver):
         elif event == 'subdomain_found':
             self._print_info(f"[{timestamp}] [+] Subdomain: {data}")
         
+        elif event == 'filtered_subdomain':
+            self._print_warning(f"[{timestamp}] [-] Out-of-scope: {data}")
+        
         elif event == 'vulnerability_found':
             severity_color = self._get_severity_color(data.get('severity', 'medium'))
             print(f"{severity_color}[{timestamp}] [!] Vulnerability: {data['type']} "
