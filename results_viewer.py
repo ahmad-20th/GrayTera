@@ -54,4 +54,4 @@ def main():
 
     if "--scan" in sys.argv:
         try:
-            scan_id = int(sys.argv[sys.argv.index("--]()_
+            scan_id = int(sys.argv[sys.argv.index("--]()))
