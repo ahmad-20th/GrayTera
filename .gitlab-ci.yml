@@ -1,1 +1,24 @@
-[... المحتوى هنا ...]
+stages:
+  - test
+  - scan
+
+nikto_scan:
+  stage: scan
+  image: python:3.10
+  before_script:
+    - apt-get update -y
+    - apt-get install -y nikto
+    - pip install tabulate
+  script:
+    - echo "Running Nikto scanner..."
+    - python3 scanners/nikto_scanner.py
+  only:
+    - merge_requests
+    - main
+
+unit_tests:
+  stage: test
+  image: python:3.10
+  script:
+    - echo "Running basic tests..."
+    - python3 -m py_compile $(find . -name "*.py")
