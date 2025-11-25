@@ -9,3 +9,4 @@ tqdm==4.66.1
 beautifulsoup4==4.12.2
 beautifulsoup4==4.12.2
 lxml==5.1.0
+python-owasp-zap-v2.4>=0.0.21

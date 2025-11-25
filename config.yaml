@@ -40,6 +40,13 @@ vulnerability_scan:
     payloads_file: payloads/sqli.txt
     detect_waf: true
   
+  zap:
+    enabled: true
+    api_key: '40lq05t4hqilu3n67or858443q'
+    proxy_url: 'http://127.0.0.1:8080'
+    spider_enabled: true
+    active_scan_enabled: true
+
   xss:
     enabled: false  # Enable when implemented
   
