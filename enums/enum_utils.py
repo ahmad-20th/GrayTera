@@ -7,16 +7,6 @@ from typing import List, Optional
 # Global stop event (shared across all enumerators)
 STOP_EVENT = threading.Event()
 
-_print_lock = threading.Lock()
-
-def safe_print(*args, **kwargs) -> None:
-    """Thread-safe print to console"""
-    try:
-        with _print_lock:
-            print(*args, **kwargs, flush=True)
-    except Exception:
-        pass
-
 def load_wordlist(path: Optional[str]) -> List[str]:
     """Load lines from a wordlist file"""
     if not path or not os.path.exists(path):

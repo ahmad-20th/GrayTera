@@ -9,7 +9,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from enums.base_enum import BaseEnumerator
-from enums.enum_utils import safe_print
+from enums.enum_utils import STOP_EVENT
 
 
 class DorkEnumerator(BaseEnumerator):
@@ -26,9 +26,8 @@ class DorkEnumerator(BaseEnumerator):
     
     def enumerate(self, domain: str) -> Set[str]:
         """Perform search engine dorking"""
-        safe_print(f"\n{'='*60}")
-        safe_print(f"[*] SEARCH ENGINE DORKING: {domain}")
-        safe_print(f"{'='*60}")
+        if STOP_EVENT.is_set():
+            return set()
         
         found = set()
         dorks = [
@@ -38,20 +37,15 @@ class DorkEnumerator(BaseEnumerator):
         ]
         
         for dork in dorks:
-            safe_print(f"\n[DORK] {dork}")
             for page in range(1, self.pages + 1):
                 html = self._bing_search(dork, page)
                 if html:
                     links = self._extract_links(html, domain)
-                    if links:
-                        safe_print(f"  Page {page}: {len(links)} URLs")
-                        found.update(links)
+                    found.update(links)
                 time.sleep(random.uniform(2.0, 3.0))
         
-        # Convert URLs to subdomains (extract domain/subdomain from URL)
+        # Convert URLs to subdomains
         subdomains = self._extract_subdomains_from_urls(found, domain)
-        
-        safe_print(f"\n[+] Found {len(subdomains)} unique subdomains from dorking")
         
         return subdomains
     
