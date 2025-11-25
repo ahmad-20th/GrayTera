@@ -4,6 +4,7 @@ from core.stage import Stage
 from core.target import Target
 from core.data_store import DataStore
 from stages.subdomain_enum import SubdomainEnumStage
+from stages.scope_filtering import ScopeFilteringStage
 from stages.vulnerability_scan import VulnerabilityScanStage
 from stages.exploitation import ExploitationStage
 import logging
@@ -12,9 +13,10 @@ import logging
 class Pipeline:
     """Main pipeline orchestrator"""
     
-    def __init__(self, data_store: DataStore, config_path: str = 'config.yaml'):
+    def __init__(self, data_store: DataStore, config_path: str = 'config.yaml', scope_file: Optional[str] = None):
         self.data_store = data_store
         self.config = self._load_config(config_path)
+        self.scope_file = scope_file
         self.observers = []
         self.stages = self._initialize_stages()
         self.current_stage_index = 0
@@ -49,6 +51,7 @@ class Pipeline:
     def _initialize_stages(self) -> List[Stage]:
         stages = [
             SubdomainEnumStage(self.config['subdomain_enum']),
+            ScopeFilteringStage(self.config.get('scope_filtering', {}), self.scope_file),
             VulnerabilityScanStage(self.config['vulnerability_scan']),
             ExploitationStage(self.config['exploitation'])
         ]

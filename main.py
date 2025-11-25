@@ -26,6 +26,7 @@ def main():
                        help='Run specific stage only')
     parser.add_argument('--output', default='data/scans', help='Output directory')
     parser.add_argument('--config', default='config.yaml', help='Config file')
+    parser.add_argument('--scope', help='Scope file (scope.json) for pentest scope filtering')
     args = parser.parse_args()
     
     # Validate target domain
@@ -49,7 +50,7 @@ def main():
     
     # Create pipeline with observers
     try:
-        pipeline = Pipeline(data_store, config_path=args.config)
+        pipeline = Pipeline(data_store, config_path=args.config, scope_file=args.scope)
         pipeline.attach(ConsoleObserver())
         pipeline.attach(FileObserver(args.output))
     except Exception as e:
