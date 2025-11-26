@@ -4,42 +4,54 @@ subdomain_enum:
   timeout: 10
   max_subdomains: 1000
   
-  # Enable/disable strategies
+  # Enable/disable enumeration strategies
   use_dns: true
   use_crt_sh: true
-  use_dorking: true
+  use_dorking: false
   
-  # Strategy-specific configs
+  # DNS enumeration settings
   dns:
     threads: 10
     wordlist: wordlists/subdomains.txt
   
+  # Certificate Transparency settings
   ct:
     timeout: 20
   
+  # Google dorking settings
   dork:
     pages: 5
     timeout: 10
   
+  # Common subdomains to always check
   common_subdomains: ['www', 'mail', 'ftp', 'admin', 'blog', 'dev', 'api']
 
 scope_filtering:
   enabled: true
-  # Set scope file via --scope command line argument
+  # Scope file can be specified via --scope argument
   # Example: python main.py example.com --scope scope.json
 
 vulnerability_scan:
   threads: 10
   timeout: 30
-  max_depth: 3  # For crawling
+  max_depth: 3
   follow_redirects: true
   
-  # Scanner-specific configs
+  # SQL Injection scanner
   sqli:
     enabled: true
-    payloads_file: payloads/sqli.txt
+    payloads_file: payloads/sqli_strategies.yaml
     detect_waf: true
   
+  # XSS scanner (not yet implemented)
+  xss:
+    enabled: false
+  
+  # CSRF scanner (not yet implemented)
+  csrf:
+    enabled: false
+  
+  # OWASP ZAP integration
   zap:
     enabled: false
     api_key: '40lq05t4hqilu3n67or858443q'
@@ -49,46 +61,30 @@ vulnerability_scan:
     max_depth: 2
     max_children: 10
 
+  # Nikto scanner integration
   nikto:
-    enabled: true
-    nikto_path: null
+    enabled: false
+    nikto_path: null  # null = auto-detect from PATH
     timeout: 300
 
-  xss:
-    enabled: false  # Enable when implemented
-  
-  csrf:
-    enabled: false  # Enable when implemented
-
 exploitation:
-  auto_exploit: false  # Require manual confirmation
+  auto_exploit: false  # Require manual confirmation for safety
   max_attempts: 3
   timeout: 60
   
-  # Exploit-specific configs
-  # Exploitation Configuration
-exploitation:
-  auto_exploit: false
-  max_attempts: 3
-  timeout: 60
-  
-  # SQLMap configuration (Layer 1)
+  # SQLMap integration
   sqlmap:
-    path: "B:\\graytera\\GrayTera\\venv\\Scripts\\sqlmap.exe"  # Optional absolute path or command
-    level: 5          # 1-5 (5 = maximum depth)
-    risk: 3           # 1-3 (3 = maximum aggressiveness)
-    threads: 10       # عدد الـ threads
-    timeout: 600      # 10 دقائق
-    crawl_depth: 3    # عمق البحث في الموقع
+    path: null  # null = auto-detect from PATH, or set absolute path
+    level: 5    # 1-5 (detection depth)
+    risk: 3     # 1-3 (test aggressiveness)
+    threads: 10
+    timeout: 600  # 10 minutes
+    crawl_depth: 3
   
-  # SQLi-specific settings
+  # SQLi exploitation settings
   sqli:
     extract_tables: true
-    extract_users: false
-    max_rows: 10
-  sqli:
-    extract_tables: true
-    extract_users: false  # Be careful with this!
+    extract_users: false  # Disabled by default for safety
     max_rows: 10
 
 retry:
@@ -97,7 +93,7 @@ retry:
   retry_on_status: [500, 502, 503, 504]
 
 output:
-  save_format: json  # json, html, xml
+  save_format: json
   include_raw_requests: false
   include_screenshots: false
 
