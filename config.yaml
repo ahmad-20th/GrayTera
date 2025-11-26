@@ -53,17 +53,17 @@ vulnerability_scan:
   
   # OWASP ZAP integration
   zap:
-    enabled: false
+    enabled: true
     api_key: '40lq05t4hqilu3n67or858443q'
     proxy_url: 'http://127.0.0.1:8080'
     spider_enabled: true
     active_scan_enabled: true
     max_depth: 2
-    max_children: 10
+    max_children: 5
 
   # Nikto scanner integration
   nikto:
-    enabled: false
+    enabled: true
     nikto_path: null  # null = auto-detect from PATH
     timeout: 300
 

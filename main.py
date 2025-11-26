@@ -10,10 +10,7 @@ from observers.file_observer import FileObserver
 from utils.logger import setup_logging
 from utils.output import error, success, info
 
-# Get script directory for relative paths
 SCRIPT_DIR = Path(__file__).parent.absolute()
-
-# Global pipeline reference for signal handling
 pipeline = None
 
 def print_banner():

@@ -28,11 +28,6 @@ class NiktoScanner(BaseScanner):
         return None
     
     def scan(self, target_url: str) -> List[Vulnerability]:
-        """Scan target with Nikto"""
-        if not target_url.startswith(('http://', 'https://')):
-            target_url = f"https://{target_url}"
-        
-        # FIX: Validate domain before scanning
         if not self._is_valid_target(target_url):
             print(f"[Nikto] Skipping invalid target: {target_url}")
             return []

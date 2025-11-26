@@ -4,7 +4,6 @@ from typing import List
 from datetime import datetime
 import time
 
-
 class ZAPScanner(BaseScanner):
     """OWASP ZAP vulnerability scanner integration"""
     
@@ -20,6 +19,7 @@ class ZAPScanner(BaseScanner):
 
     def _ensure_zap_running(self):
         """Start ZAP daemon if not already running"""
+        from pathlib import Path
         import subprocess
         import socket
         
@@ -36,24 +36,28 @@ class ZAPScanner(BaseScanner):
         
         # Start ZAP daemon
         print("[ZAP] Starting ZAP daemon...")
+        PROJECT_ROOT = Path(__file__).parent.parent.absolute()
+        zap_path = PROJECT_ROOT / 'ZAP_2.16.1' / 'zap.sh'
+
         try:
             # Linux/Mac
-            subprocess.Popen(['/home/kali/GrayTera/ZAP_2.16.1/zap.sh', '-daemon', '-port', '8080', 
+            subprocess.Popen([str(zap_path), '-daemon', '-port', '8080', 
                             '-config', 'api.key=' + (self.api_key or '')],
-                           stdout=subprocess.DEVNULL, 
-                           stderr=subprocess.DEVNULL)
+                            stdout=subprocess.DEVNULL, 
+                            stderr=subprocess.DEVNULL)
         except:
             try:
                 # Windows
-                subprocess.Popen(['zap.bat', '-daemon', '-port', '8080',
+                zap_bat = PROJECT_ROOT / 'ZAP_2.16.1' / 'zap.bat'
+                subprocess.Popen([str(zap_bat), '-daemon', '-port', '8080',
                                 '-config', 'api.key=' + (self.api_key or '')],
-                               stdout=subprocess.DEVNULL, 
-                               stderr=subprocess.DEVNULL)
+                                stdout=subprocess.DEVNULL, 
+                                stderr=subprocess.DEVNULL)
             except Exception as e:
                 print(f"[!] Failed to start ZAP daemon: {e}")
-                print("[!] Please start ZAP manually: zap.sh -daemon -port 8080")
-                return
-        
+                print(f"[!] Please start ZAP manually: {zap_path} -daemon -port 8080")
+                return      
+                  
         # Wait for ZAP to start
         import time
         for i in range(30):
