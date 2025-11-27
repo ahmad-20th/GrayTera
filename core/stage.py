@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Any
 from core.target import Target
-from observers.base_observer import BaseObserver  # ADD THIS IMPORT
+from observers.base_observer import BaseObserver
 
 
 class Stage(ABC):

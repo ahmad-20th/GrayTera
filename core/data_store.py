@@ -4,7 +4,7 @@ import logging
 import shutil
 import re
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 from core.target import Target, Vulnerability
 
@@ -113,7 +113,7 @@ class DataStore:
         if target_dir.exists():
             shutil.rmtree(target_dir)
     
-    def list_targets(self) -> list[str]:
+    def list_targets(self) -> List[str]:
         """List all saved target domains"""
         targets = []
         for target_dir in self.base_path.iterdir():

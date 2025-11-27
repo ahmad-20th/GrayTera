@@ -49,8 +49,8 @@ class ScopeFilteringStage(Stage):
             for subdomain in out_of_scope:
                 self.notify("filtered_subdomain", subdomain)
             
-            # Update target with only in-scope subdomains
-            target.subdomains = in_scope
+            # Update target with only in-scope subdomains (convert back to set)
+            target.subdomains = set(in_scope)
             target.metadata['filtered_subdomains'] = out_of_scope
             target.metadata['scope_stats'] = self.scope_filter.get_stats()
             

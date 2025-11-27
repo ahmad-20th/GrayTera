@@ -7,7 +7,7 @@ subdomain_enum:
   # Enable/disable enumeration strategies
   use_dns: true
   use_crt_sh: true
-  use_dorking: false
+  use_dorking: true
   
   # DNS enumeration settings
   dns:
@@ -53,7 +53,7 @@ vulnerability_scan:
   
   # OWASP ZAP integration
   zap:
-    enabled: true
+    enabled: false
     api_key: '40lq05t4hqilu3n67or858443q'
     proxy_url: 'http://127.0.0.1:8080'
     spider_enabled: true
@@ -63,9 +63,9 @@ vulnerability_scan:
 
   # Nikto scanner integration
   nikto:
-    enabled: true
+    enabled: false  # Disabled by default - too slow for non-existent domains
     nikto_path: null  # null = auto-detect from PATH
-    timeout: 300
+    timeout: 30  # Much shorter timeout for test environments
 
 exploitation:
   auto_exploit: false  # Require manual confirmation for safety
