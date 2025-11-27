@@ -7,7 +7,6 @@ from core.target import Target
 from utils.scope_filter import ScopeFilter
 from typing import Optional
 
-
 class ScopeFilteringStage(Stage):
     """Stage 1.5: Scope Filtering (between Enumeration and Vulnerability Scanning)"""
     
