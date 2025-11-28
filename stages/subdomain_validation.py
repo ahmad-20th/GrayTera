@@ -5,8 +5,16 @@ Filters out dead/unreachable subdomains before vulnerability scanning
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from core.stage import Stage
 from core.target import Target
-from utils.http_client import HTTPClient
 from typing import Set, Tuple
+import socket
+import requests
+from urllib.parse import urlparse
+import warnings
+import urllib3
+
+# Suppress SSL warnings
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+warnings.filterwarnings('ignore', message='Unverified HTTPS request')
 
 
 class SubdomainValidationStage(Stage):
@@ -16,8 +24,8 @@ class SubdomainValidationStage(Stage):
         super().__init__("Subdomain Validation")
         self.config = config or {}
         self.threads = config.get('threads', 20)
-        self.timeout = config.get('timeout', 10)
-        self.http_client = HTTPClient(timeout=self.timeout)
+        self.timeout = config.get('timeout', 5)  # Reduced from 10 to 5 seconds
+        self.dns_timeout = config.get('dns_timeout', 2)  # DNS check timeout
         self.valid_subdomains: Set[str] = set()
         self.dead_subdomains: Set[str] = set()
     
@@ -65,9 +73,9 @@ class SubdomainValidationStage(Stage):
             return False
     
     def _validate_subdomains(self, target: Target):
-        """Validate subdomains concurrently"""
+        """Validate subdomains concurrently with fast DNS + HTTP checks"""
         # Calculate total timeout: allow threads to work + buffer
-        total_timeout = (len(target.subdomains) * self.timeout) + 60
+        total_timeout = (len(target.subdomains) * self.timeout) + 30
         
         with ThreadPoolExecutor(max_workers=self.threads) as executor:
             # Submit all tasks
@@ -77,67 +85,65 @@ class SubdomainValidationStage(Stage):
             }
             
             # Process results as they complete
+            completed = 0
             for future in as_completed(future_to_subdomain, timeout=total_timeout):
                 subdomain = future_to_subdomain[future]
+                completed += 1
                 
                 try:
-                    is_live, protocol = future.result(timeout=self.timeout + 5)
+                    is_live, check_type = future.result(timeout=self.timeout + 3)
                     
                     if is_live:
                         self.valid_subdomains.add(subdomain)
-                        self.notify("info", f"✓ Live: {subdomain} ({protocol})")
+                        self.notify("info", f"✓ Live: {subdomain} [{check_type}]")
                     else:
                         self.dead_subdomains.add(subdomain)
-                        self.notify("warning", f"✗ Dead: {subdomain}")
                         
                 except Exception as e:
                     self.dead_subdomains.add(subdomain)
-                    self.notify("warning", f"✗ Unreachable: {subdomain} ({type(e).__name__})")
     
     def _check_subdomain_live(self, subdomain: str) -> Tuple[bool, str]:
         """
-        Check if a subdomain is live and responsive
-        Returns (is_live, protocol_used)
+        Fast subdomain validation: DNS check first, then quick HTTP probe
+        Returns (is_live, check_type)
         """
         # Normalize subdomain URL
         if not subdomain.startswith(('http://', 'https://')):
-            # Try HTTPS first, then HTTP
-            for protocol in ['https', 'http']:
-                url = f"{protocol}://{subdomain}"
-                try:
-                    response = self.http_client.get(
+            domain_only = subdomain
+        else:
+            parsed = urlparse(subdomain)
+            domain_only = parsed.netloc or parsed.path
+        
+        # Step 1: Quick DNS resolution (fastest check)
+        try:
+            socket.setdefaulttimeout(self.dns_timeout)
+            socket.gethostbyname(domain_only)
+            
+            # Step 2: Try quick HTTP HEAD request
+            try:
+                for protocol in ['https', 'http']:
+                    url = f"{protocol}://{domain_only}"
+                    response = requests.head(
                         url,
                         timeout=self.timeout,
-                        raise_for_status=False,
-                        allow_redirects=True
+                        allow_redirects=False,
+                        verify=False
                     )
-                    
-                    # Consider 2xx, 3xx, 4xx as "live" (DNS resolved, web server responded)
-                    # Only 5xx or connection errors mean dead
-                    if response and response.status_code < 500:
-                        return True, protocol
-                        
-                except Exception:
-                    continue
-            
-            return False, 'unknown'
-        else:
-            # Already has protocol
-            try:
-                response = self.http_client.get(
-                    subdomain,
-                    timeout=self.timeout,
-                    raise_for_status=False,
-                    allow_redirects=True
-                )
-                
-                if response and response.status_code < 500:
-                    return True, 'http/https'
-                    
+                    # Consider any response except timeout/connection error as "live"
+                    if response.status_code < 500:
+                        return True, f"{protocol}"
+            except (requests.Timeout, requests.ConnectionError):
+                pass
             except Exception:
                 pass
             
-            return False, 'unknown'
+            # If HTTP checks failed but DNS resolved, it's still "live" (DNS resolved)
+            return True, "DNS"
+            
+        except (socket.gaierror, socket.timeout, OSError):
+            return False, "unreachable"
+        finally:
+            socket.setdefaulttimeout(None)
     
     def is_enabled(self) -> bool:
         """Check if subdomain validation is enabled"""
