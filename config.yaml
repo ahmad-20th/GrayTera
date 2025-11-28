@@ -63,7 +63,7 @@ vulnerability_scan:
 
   # Nikto scanner integration
   nikto:
-    enabled: false  # Enabled for comprehensive testing
+    enabled: true  # Enabled for comprehensive testing
     nikto_path: null  # null = auto-detect from PATH
     timeout: 30  # Much shorter timeout for test environments
 

@@ -56,7 +56,7 @@ def main():
     parser.add_argument('target', help='Target domain (e.g., example.com)')
     parser.add_argument('--resume', action='store_true', 
                        help='Resume previous scan')
-    parser.add_argument('--stage', choices=['enum', 'filter', 'scan', 'exploit'], 
+    parser.add_argument('--stage', choices=['enum', 'filter', 'validate', 'scan', 'exploit'], 
                        help='Run specific stage only')
     parser.add_argument('--output', default='data/scans', 
                        help='Output directory (default: data/scans)')

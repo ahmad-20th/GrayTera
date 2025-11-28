@@ -50,7 +50,9 @@ class ConsoleObserver(BaseObserver):
             pass
         
         elif event == 'exploit_success':
-            self._print_success(f"[{timestamp}] [✓] Exploited {data['type']} at {data['url']}")
+            cve_id = data.get('cve_id', 'Unknown')
+            param_count = data.get('parameters_exploited', 1)
+            self._print_success(f"[{timestamp}] [✓] Exploited {cve_id}: {param_count} parameter(s) compromised")
         
         elif event == 'exploit_failed':
             self._print_warning(f"[{timestamp}] [✗] Failed to exploit: {data}")

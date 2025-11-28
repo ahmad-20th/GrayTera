@@ -6,6 +6,7 @@ from core.target import Target
 from core.data_store import DataStore
 from stages.subdomain_enum import SubdomainEnumStage
 from stages.scope_filtering import ScopeFilteringStage
+from stages.subdomain_validation import SubdomainValidationStage
 from stages.vulnerability_scan import VulnerabilityScanStage
 from stages.exploitation import ExploitationStage
 
@@ -37,6 +38,11 @@ class Pipeline:
                 'max_subdomains': 1000
             },
             'scope_filtering': {},
+            'subdomain_validation': {
+                'enabled': True,
+                'threads': 20,
+                'timeout': 10
+            },
             'vulnerability_scan': {
                 'threads': 10,
                 'timeout': 30
@@ -51,6 +57,7 @@ class Pipeline:
         stages = [
             SubdomainEnumStage(self.config.get('subdomain_enum', {})),
             ScopeFilteringStage(self.config.get('scope_filtering', {}), self.scope_file),
+            SubdomainValidationStage(self.config.get('subdomain_validation', {})),
             VulnerabilityScanStage(self.config.get('vulnerability_scan', {})),
             ExploitationStage(self.config.get('exploitation', {}))
         ]
@@ -109,8 +116,9 @@ class Pipeline:
         stage_map = {
             'enum': 0,
             'filter': 1,
-            'scan': 2,
-            'exploit': 3
+            'validate': 2,
+            'scan': 3,
+            'exploit': 4
         }
         
         if stage_name not in stage_map:
