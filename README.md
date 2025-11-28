@@ -364,8 +364,6 @@ Comprehensive documentation available in `docs/`:
 - **[Configuration Reference](docs/configuration.md)** - All settings explained
 - **[Scanner Details](docs/scanners.md)** - Scanner capabilities and tuning
 - **[Development Guide](docs/development.md)** - Contribution guidelines
-- **[API Reference](docs/api.md)** - Core component documentation
-- **[Troubleshooting](docs/troubleshooting.md)** - Common issues and solutions
 
 ## 🐛 Troubleshooting
 
