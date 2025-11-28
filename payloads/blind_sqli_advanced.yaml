@@ -3,7 +3,7 @@
 # Supports all major blind SQLi techniques
 
 strategies:
-  # =========== CONDITIONAL ERROR DETECTION ===========
+  # ========== CONDITIONAL ERROR DETECTION ==========
   - name: oracle_conditional_error
     description2: "Oracle - Error-based blind SQLi (500 error = TRUE)"
     target: query
