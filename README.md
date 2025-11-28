@@ -5,7 +5,7 @@
 ![Python 3.8+](https://img.shields.io/badge/Python-3.8%2B-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-## 🎯 Overview
+## Overview
 
 GrayTera is an enterprise-grade penetration testing automation framework designed for efficient vulnerability discovery and exploitation. Built with a 4-stage pipeline architecture, it combines multiple enumeration strategies, concurrent vulnerability scanning, and intelligent exploitation capabilities.
 
@@ -16,7 +16,7 @@ GrayTera is an enterprise-grade penetration testing automation framework designe
 - Efficient concurrent scanning (configurable thread pools)
 - Comprehensive data persistence and resume capability
 
-## ✨ Features
+## Features
 
 ### Core Capabilities
 - **Multi-technique Subdomain Enumeration**: DNS queries, Certificate Transparency logs, Google dorking
@@ -32,7 +32,7 @@ GrayTera is an enterprise-grade penetration testing automation framework designe
 - **Flexible Configuration**: YAML-based settings with sensible defaults
 - **Data Persistence**: JSON snapshots and Pickle serialization for complete state recovery
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Installation
 
@@ -83,7 +83,7 @@ python main.py example.com --verbose
 python main.py example.com --output /path/to/results
 ```
 
-## 📋 Command-Line Options
+## Command-Line Options
 
 | Option | Short | Description |
 |--------|-------|-------------|
@@ -95,7 +95,7 @@ python main.py example.com --output /path/to/results
 | `--verbose` | `-v` | Enable verbose logging output |
 | `--help` | `-h` | Display help information |
 
-## 🏗️ Architecture
+## Architecture
 
 ### 4-Stage Pipeline
 
@@ -183,7 +183,7 @@ GrayTera/
     └── troubleshooting.md     # Common issues
 ```
 
-## ⚙️ Configuration
+## Configuration
 
 ### config.yaml Structure
 
@@ -244,7 +244,7 @@ Create `scope.json` for targeted scanning:
 }
 ```
 
-## 📊 Performance Metrics
+## Performance Metrics
 
 | Operation | Time (4 subdomains) | Memory |
 |-----------|-------------------|--------|
@@ -256,7 +256,7 @@ Create `scope.json` for targeted scanning:
 
 *Metrics based on typical test domain with enabled strategies. Results vary by network latency and target responsiveness.*
 
-## 🔐 Security & Best Practices
+## Security & Best Practices
 
 ### Responsible Use
 - **Only test systems you own or have explicit written permission to test**
@@ -277,7 +277,7 @@ Create `scope.json` for targeted scanning:
 - Automatic recovery from malformed responses
 - Silent error handling for test domains (non-existent domains)
 
-## 🧪 Testing & Validation
+## Testing & Validation
 
 ### Run Test Suite
 ```bash
@@ -304,7 +304,7 @@ python main.py google.com --stage enum
 python main.py google.com --resume
 ```
 
-## 🛠️ Extension Guide
+## Extension Guide
 
 ### Adding a New Scanner
 
@@ -357,7 +357,7 @@ class CustomEnum(BaseEnum):
 2. **Register strategy** in `enums/enum_registry.py`
 3. **Enable in config.yaml**
 
-## 📚 Documentation
+## Documentation
 
 Comprehensive documentation available in `docs/`:
 - **[Architecture](docs/architecture.md)** - Design patterns and component interactions
@@ -365,7 +365,7 @@ Comprehensive documentation available in `docs/`:
 - **[Scanner Details](docs/scanners.md)** - Scanner capabilities and tuning
 - **[Development Guide](docs/development.md)** - Contribution guidelines
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Program Freezes
 - **Check timeouts** in `config.yaml` (vulnerability_scan.timeout should be 60s)
@@ -390,7 +390,7 @@ export SQLMAP_PATH="/usr/local/bin/sqlmap"
 - **Check permissions** on pickle files
 - **Inspect logs** in `data/logs/` for errors
 
-## 📦 Dependencies
+## Dependencies
 
 | Package | Version | Purpose |
 |---------|---------|---------|
@@ -406,17 +406,17 @@ Install with:
 pip install -r requirements.txt
 ```
 
-## 📄 License
+## License
 
 MIT License - See LICENSE.md for details
 
 **Disclaimer**: This tool is for authorized security testing only. Unauthorized access is illegal. Users are responsible for ensuring legal compliance.
 
-## 👥 Contributing
+## Contributing
 
 Contributions welcome! Please see [Development Guide](docs/development.md) for guidelines.
 
-## 🔗 Resources
+## Resources
 
 - [OWASP Testing Guide](https://owasp.org/www-project-web-security-testing-guide/)
 - [SQLMap Documentation](http://sqlmap.org/)

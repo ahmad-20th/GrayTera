@@ -2,7 +2,7 @@
 
 Welcome to the GrayTera documentation wiki. This comprehensive guide covers all aspects of the penetration testing automation framework.
 
-## 📑 Documentation Index
+## Documentation Index
 
 ### Getting Started
 - **[Quick Start Guide](#quick-start)** - Installation and basic usage
@@ -81,23 +81,23 @@ GrayTera/
 
 ## Key Features
 
-✨ **Multi-technique Enumeration**
+**Multi-technique Enumeration**
 - DNS resolution with wordlists
 - Certificate Transparency mining
 - Google dorking support
 
-🔍 **Advanced Scanning**
+**Advanced Scanning**
 - SQL Injection detection
 - Multi-threaded concurrent scanning
 - Extensible scanner framework
 
-⚡ **Intelligent Exploitation**
+**Intelligent Exploitation**
 - Blind SQLi techniques
 - Time-based detection
 - Boolean-based validation
 - 3-layer exploitation engine
 
-📊 **Complete Automation**
+**Complete Automation**
 - 4-stage pipeline orchestration
 - Scope filtering and control
 - Resume from checkpoints
