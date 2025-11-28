@@ -1,5 +1,5 @@
 strategies:
-  # ============ PORTSWIGGER-OPTIMIZED BOOLEAN-BASED ============
+  # ============= PORTSWIGGER-OPTIMIZED BOOLEAN-BASED =============
   - name: boolean_basic_hidden_data
     description: PortSwigger basic hidden data detection
     target: query
