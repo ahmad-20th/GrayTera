@@ -67,6 +67,12 @@ class SubdomainEnumStage(Stage):
             with self.lock:
                 target.add_subdomain(fqdn)
                 added += 1
+        
+        # If no subdomains found, add the base domain itself for scanning
+        if added == 0:
+            target.add_subdomain(domain)
+            self.notify("info", f"No subdomains found; adding base domain for scanning")
+            added = 1
 
         self.notify("complete", f"Found {added} subdomains")
         return True

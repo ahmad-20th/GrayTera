@@ -12,6 +12,7 @@ class ConsoleObserver(BaseObserver):
             'success': '\033[92m',   # Green
             'warning': '\033[93m',   # Yellow
             'error': '\033[91m',     # Red
+            'cve': '\033[95m',       # Magenta (prominent for CVEs)
             'reset': '\033[0m'
         }
     
@@ -45,9 +46,8 @@ class ConsoleObserver(BaseObserver):
             self._print_warning(f"[{timestamp}] [-] Out-of-scope: {data}")
         
         elif event == 'vulnerability_found':
-            severity_color = self._get_severity_color(data.get('severity', 'medium'))
-            print(f"{severity_color}[{timestamp}] [!] Vulnerability: {data['type']} "
-                  f"at {data['subdomain']}{self.colors['reset']}")
+            # Suppress individual vulnerability output - will show consolidated later
+            pass
         
         elif event == 'exploit_success':
             self._print_success(f"[{timestamp}] [✓] Exploited {data['type']} at {data['url']}")
@@ -75,3 +75,42 @@ class ConsoleObserver(BaseObserver):
             'low': self.colors['info']
         }
         return severity_map.get(severity.lower(), self.colors['info'])
+    
+    def print_consolidated_cve_findings(self, cve_map: dict) -> None:
+        """
+        Display consolidated CVE findings in standard format with NIST links
+        
+        Args:
+            cve_map: Dict from CVEMapper.deduplicate_by_cve()
+        """
+        if not cve_map:
+            return
+        
+        timestamp = datetime.now().strftime('%H:%M:%S')
+        
+        if 'UNCATEGORIZED' in cve_map:
+            uncategorized = cve_map.pop('UNCATEGORIZED')
+            total_uncategorized = uncategorized.get('count', 0)
+            print(f"{self.colors['warning']}[{timestamp}] [!] {total_uncategorized} Uncategorized Vulnerability(ies){self.colors['reset']}")
+            print(f"    Type: {uncategorized['vuln_type'].upper()}")
+            print(f"    Severity: {uncategorized.get('severity', 'unknown').upper()}\n")
+        
+        # Sort by severity
+        severity_order = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3}
+        sorted_cves = sorted(cve_map.items(), 
+                            key=lambda x: severity_order.get(x[1]['severity'], 4))
+        
+        for cve_id, finding in sorted_cves:
+            severity = finding.get('severity', 'unknown').upper()
+            severity_color = self._get_severity_color(finding.get('severity', 'medium'))
+            count = finding.get('count', 1)
+            affected_params = finding.get('affected_parameters', [])
+            
+            # Standard format with timestamp and stage
+            nist_url = f"https://nvd.nist.gov/vuln/detail/{cve_id}"
+            print(f"{severity_color}[{timestamp}] [CVE] {cve_id}{self.colors['reset']}")
+            print(f"    Type: {finding['vuln_type'].upper()}")
+            print(f"    Severity: {severity}")
+            print(f"    Affected: {count} parameter(s) across {len(set(p['url'] for p in affected_params))} endpoint(s)")
+            print(f"    Details: {nist_url}\n")
+

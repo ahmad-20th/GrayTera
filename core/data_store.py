@@ -174,7 +174,8 @@ class DataStore:
                     'parameter': v.parameter,
                     'payload': v.payload,
                     'evidence': v.evidence,
-                    'timestamp': v.timestamp.isoformat() if hasattr(v, 'timestamp') else None
+                    'timestamp': v.timestamp.isoformat() if hasattr(v, 'timestamp') else None,
+                    'cve_id': v.cve_id if hasattr(v, 'cve_id') else None
                 }
                 for v in target.vulnerabilities
             ],
@@ -202,7 +203,8 @@ class DataStore:
                 url=v_data['url'],
                 parameter=v_data.get('parameter'),
                 payload=v_data.get('payload'),
-                evidence=v_data.get('evidence')
+                evidence=v_data.get('evidence'),
+                cve_id=v_data.get('cve_id')
             )
             # Restore timestamp if available
             if v_data.get('timestamp'):

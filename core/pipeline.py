@@ -1,4 +1,5 @@
 import yaml
+import sys
 from typing import Optional, List
 from core.stage import Stage
 from core.target import Target
@@ -12,11 +13,12 @@ from stages.exploitation import ExploitationStage
 class Pipeline:
     """Main pipeline orchestrator"""
     
-    def __init__(self, data_store: DataStore, config_path: str = 'config.yaml', scope_file: Optional[str] = None):
+    def __init__(self, data_store: DataStore, config_path: str = 'config.yaml', scope_file: Optional[str] = None, interactive: bool = False):
         self.data_store = data_store
         self.config_path = config_path  # Store the path for stages that need it
         self.config = self._load_config(config_path)
         self.scope_file = scope_file
+        self.interactive = interactive  # Enable interactive pauses between stages
         self.observers = []
         self.stages = self._initialize_stages()
         self.current_stage_index = 0
@@ -97,6 +99,10 @@ class Pipeline:
             target.metadata.pop('last_failed_stage', None)  # Clear any previous failure
             self.data_store.save_target(target)
             self._notify_all(f"Completed stage: {stage.name}")
+            
+            # Prompt user before continuing to next stage (if interactive and not last stage)
+            if self.interactive and idx < len(self.stages) - 1:
+                self._prompt_to_continue(stage, idx)
     
     def _run_specific_stage(self, target: Target, stage_name: str):
         """Execute a specific stage"""
@@ -155,3 +161,27 @@ class Pipeline:
         """Notify all observers"""
         for observer in self.observers:
             observer.update("Pipeline", "info", message)
+    
+    def _prompt_to_continue(self, completed_stage: Stage, stage_idx: int):
+        """Prompt user to review stage results and continue"""
+        next_stage = self.stages[stage_idx + 1]
+        
+        print("\n" + "="*70)
+        print(f"✓ Stage {stage_idx + 1}/{len(self.stages)} completed: {completed_stage.name}")
+        print(f"➜ Next stage: {next_stage.name}")
+        print("="*70)
+        
+        while True:
+            response = input("\nContinue to next stage? (y/n/skip): ").strip().lower()
+            
+            if response == 'y':
+                print()
+                break
+            elif response == 'n':
+                print("\n[!] Pipeline paused. Use --resume to continue later.")
+                sys.exit(0)
+            elif response == 'skip':
+                print(f"\n[!] Skipping remaining stages.")
+                sys.exit(0)
+            else:
+                print("Invalid input. Please enter 'y', 'n', or 'skip'.")

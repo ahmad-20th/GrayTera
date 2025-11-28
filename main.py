@@ -9,6 +9,7 @@ from observers.console_observer import ConsoleObserver
 from observers.file_observer import FileObserver
 from utils.logger import setup_logging
 from utils.output import error, success, info
+from utils.cve_mapper import CVEMapper
 
 SCRIPT_DIR = Path(__file__).parent.absolute()
 pipeline = None
@@ -67,6 +68,8 @@ def main():
                        help='Enable verbose output')
     parser.add_argument('--debug', action='store_true', 
                        help='Enable debug mode')
+    parser.add_argument('--interactive', action='store_true',
+                       help='Pause between stages to review results')
     parser.add_argument('--version', action='version', version='GrayTera v1.0')
     
     args = parser.parse_args()
@@ -123,7 +126,7 @@ def main():
     
     # Create pipeline with observers
     try:
-        pipeline = Pipeline(data_store, config_path=args.config, scope_file=args.scope)
+        pipeline = Pipeline(data_store, config_path=args.config, scope_file=args.scope, interactive=args.interactive)
         pipeline.attach(ConsoleObserver())
         pipeline.attach(FileObserver(args.output))
     except Exception as e:
